@@ -1,7 +1,15 @@
 #include "metric.h"
 
-#define packetLoss_LIMIAR (90/255);
-void    packetLoss(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,QString fName)
+
+void    packet_loss(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,QString fName)
+{
+    return ;
+}
+
+
+
+#define measure_lines_v2_LIMIAR (90/255);
+void    measure_lines_v2(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,QString fName)
 {
     int i,x,y,pos;
     int frame_nr;

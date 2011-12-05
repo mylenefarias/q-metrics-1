@@ -57,15 +57,24 @@ void   blockingVlachos(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,QStri
 void   blurringWinkler(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,int high,int low,float s,float (*norm)(float,float),QString fName);
 
 /**
-* @brief Função que imprime no arquivo .txt a métrica de perda de pacotes
+* @brief Função que imprime no arquivo a medida de measure_lines_v2.m
 * @param sizeX          Comprimento do vídeo
 * @param sizeY          Largura do vídeo
 * @param total_frame_nr Número de frames do vídeo
 * @param ybuf           Buffer contendo a componente de luminância (Y) do vídeo
-* @param fName          Nome do arquivo que contem o resultado da metrica [fName]_blur.txt
+* @param fName          Nome do arquivo que contem o resultado da metrica
 */
-void    packetLoss(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,QString fName);
+void    measure_lines_v2(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,QString fName);
 
+/**
+* @brief Função que imprime no arquivo a medida de perdas de pacotes
+* @param sizeX          Comprimento do vídeo
+* @param sizeY          Largura do vídeo
+* @param total_frame_nr Número de frames do vídeo
+* @param ybuf           Buffer contendo a componente de luminância (Y) do vídeo
+* @param fName          Nome do arquivo que contem o resultado da metrica
+*/
+void    packet_loss(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,QString fName);
 
 /**
 * @brief Calcula o SSIM entre duas imagens
