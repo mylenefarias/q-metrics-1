@@ -25,7 +25,6 @@
 
 #include <math.h>
 #include <mat.hpp>
-#include <aux.hpp>
 #include <opencv/cv.h>
 
 #include "global.h"
@@ -36,16 +35,15 @@ enum ConvolutionType {
   CONVOLUTION_VALID /** Return only the submatrix containing elements that were not influenced by the border */
 };
 
+void corr2D(const cv::Mat & src1,const cv::Mat & src2,cv::Mat & dest);
 void conv2D(const cv::Mat &img, cv::Mat& dest, const cv::Mat& kernel, ConvolutionType ctype = CONVOLUTION_SAME, int btype = cv::BORDER_DEFAULT);
 
-/**
-* @brief Converte um buffer para uma matriz do OpenCV
-*
-* @param sizeX Largura da imagem
-* @param sizeY Altura da imagem
-* @param ybuf  Buffer contendo os dados da imagem
-*/
-cv::Mat buffer2CVMat(int sizeX,int sizeY, uchar * ybuf);
+void downsample(const cv::Mat & src,
+                cv::Mat & dest,
+                const int initRow,
+                const int initCol,
+                const int ratioRow = 8,
+                const int ratioCol = 8);
 
 /**
 * @brief Retorna em dest a convolucao com o filtro de textura de Laws no sentido horizontal
@@ -70,99 +68,5 @@ void filterHantaoV(cv::Mat & src,cv::Mat & dest);
 void analysisTexture(cv::Mat & src,cv::Mat & dest);
 void analysisContrast(cv::Mat & src,cv::Mat & dest);
 
-
-/**
-* @brief Faz subamostragem de uma imagem e retorna em [y]
-*
-* @tparam T Tipo das matrizes
-* @param Y Imagem de entrada
-* @param y Imagem de saida
-* @param initX Inicio da posicao em x
-* @param initY Inicio da posicao em y
-* @param ratioX Razao da progressao aritmetica da amostragem em x
-* @param ratioY Razao da progressao aritmetica da amostragem em y
-* @param sizeX Largura da imagem
-* @param sizeY Altura da imagem
-*/
-template <typename T>
-        void   downsample(T ** Y,T ** y,int initX,int initY,int ratioX,int ratioY,int sizeX, int sizeY)
-{
-    int i,j,i1=0,j1=0;
-    for(i=initX; i< sizeX; i+=ratioX){
-        j1 = 0;
-        for(j=initY; j< sizeY; j+=ratioY){
-            y[i1][j1]=Y[i][j];
-            j1++;
-        }
-        i1++;
-    }
-}
-
-/**
-* @brief Aplica o filtro modificado de Laws de textura na horizontal usando T1
-* (ref.: A Perceptually Relevant No-Reference Blockiness Metric Based on Local Image Characteristics)
-*
-* @param sizeX Largura da imagem
-* @param sizeY Altura da imagem
-* @param yframe Frame contendo a luminancia, de tamanho (sizeX x sizeY)
-* @param tframe Frame transformado de acordo com o coeficiente de visibilidade
-*/
-void    tfilterLawsH(int sizeX,int sizeY,uchar ** yframe,float ** tframe);
-void    tfilterLawsH(int sizeX,int sizeY,uchar ** yframe,int ** tframe);
-
-/**
-* @brief Aplica o filtro modificado de Laws de textura na vertical usando T2
-* (ref.: A Perceptually Relevant No-Reference Blockiness Metric Based on Local Image Characteristics)
-*
-* @param sizeX Largura da imagem
-* @param sizeY Altura da imagem
-* @param yframe Frame contendo a luminancia, de tamanho (sizeX x sizeY)
-* @param tframe Frame transformado de acordo com o coeficiente de visibilidade
-*/
-void    tfilterLawsV(int sizeX,int sizeY,uchar ** yframe,float ** tframe);
-void    tfilterLawsV(int sizeX,int sizeY,uchar ** yframe,int ** tframe);
-
-/**
-* @brief Aplica o filtro de Hantao de luminancia na horizontal usando L1
-* (ref.: A Perceptually Relevant No-Reference Blockiness Metric Based on Local Image Characteristics)
-*
-* @param sizeX Largura da imagem
-* @param sizeY Altura da imagem
-* @param yframe Frame contendo a luminancia, de tamanho (sizeX x sizeY)
-* @param lframe Frame transformado de acordo com o coeficiente de visibilidade
-*/
-void    lfilterHantaoH(int sizeX,int sizeY,uchar ** yframe,float **lframe);
-void    lfilterHantaoH(int sizeX,int sizeY,uchar ** yframe,int **lframe);
-
-/**
-* @brief Aplica o filtro de Hantao de luminancia na vertical usando L2
-* (ref.: A Perceptually Relevant No-Reference Blockiness Metric Based on Local Image Characteristics)
-*
-* @param sizeX Largura da imagem
-* @param sizeY Altura da imagem
-* @param yframe Frame contendo a luminancia, de tamanho (sizeX x sizeY)
-* @param lframe Frame transformado de acordo com o coeficiente de visibilidade
-*/
-void    lfilterHantaoV(int sizeX,int sizeY,uchar ** yframe,float **lframe);
-void    lfilterHantaoV(int sizeX,int sizeY,uchar ** yframe,int **lframe);
-
-/**
-* @brief Detector de bordas usando o algoritmo de Canny baseado em Parker
-*
-* @param sizeX Largura da imagem
-* @param sizeY Altura da imagem
-* @param yframe Frame contendo a luminancia, de tamanho (sizeX x sizeY)
-* @param high   Valor maximo do threshold
-* @param low    Valor minimo do threshold
-* @param s      Desvio padrao do filtro gaussiano
-* @param norm   Norma a ser utilizada (L1, L2, Loo, etc.)
-* @param cframe Imagem do frame contendo as bordas
-*/
-void    cannyEdge(int sizeX,int sizeY,uchar ** yframe,int high,int low,float s,float (*norm)(float,float),uchar ** cframe);
-
-int trace (int i, int j, int low, uchar ** im,uchar ** mag,uchar ** ori,int sizeX,int sizeY);
-int range (int i, int j,int sizeX,int sizeY);
-
-void    edgeDensity(int sizeX,int sizeY,uchar ** yframe,float ** tframe);
 
 #endif // IMG_HPP

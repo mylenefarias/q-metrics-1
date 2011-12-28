@@ -1,20 +1,30 @@
 #ifndef LOADER_H
 #define LOADER_H
 
-#include <QFile>
+#include <vector>
+#include <string>
+
 #include <fftw3.h>
+
+#include <opencv/ml.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "global.h"
 #include "img.hpp"
 #include "metric.h"
 #include "debug.h"
 
+using namespace std;
+
 class Loader
 {
         public:
-                Loader (QString,int,int,int);
+                Loader (string,int,int,int);
                 ~Loader();
 
+                void    learnCodebook(string);
                 void    callDebug();
                 void    callMetrics();
 
@@ -22,10 +32,13 @@ class Loader
                 uchar*  getYUVBuffer() const;
                 int     getTotalFrameNr() const;
 
-        private:
+                long    getFileSize(FILE *hFile);
+private:
 
-                QFile	file;
-                QString fName;
+                FILE * file;
+                string fName;
+
+                vector<cv::Mat> frameY;
 
                 int 	sizeX;          /// Numero de linhas  (altura)
                 int 	sizeY;          /// Numero de colunas (largura)
@@ -33,10 +46,9 @@ class Loader
                 int 	format;         /// Formato do video (444,422,420,400)
                 int     total_frame_nr;	/// Numero total de frames
 
-                uchar   *yuvbuf;	/// Buffer para o YUV
                 uchar   *ybuf;          /// Buffer para a luminancia (Y)
 
-                int	 yuvbuffersize;	/// Tamanho de *yuvbuf
+                int	 yuvbuffersize;     /// Tamanho de *yuvbuf
 
 };
 

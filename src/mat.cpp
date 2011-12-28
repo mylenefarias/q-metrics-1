@@ -22,35 +22,7 @@
 
 #include <mat.hpp>
 
-void    DHT(double * in, double * out,int s){
-    fftw_plan p;
-    p = fftw_plan_r2r_1d(s,in,out,FFTW_DHT,FFTW_ESTIMATE);
-    fftw_execute(p);
-    fftw_destroy_plan(p);
-}
-void    hammingWindow(double ** Win,int winLin,int winCol){
 
-    double ftmp;
-    int i;
-    double *winL, *winC;
-    winL= new double[winLin];
-    winC= new double[winCol];
-
-    ftmp = M_PI/winLin;
-    for (i=0; i<winLin; i++)
-        winL[i] = (0.54 + 0.46*cos(ftmp*((double)i+0.5)));
-
-    for (i=0; i<winCol; i++)
-        winC[i] = (0.54 + 0.46*cos(ftmp*((double)i+0.5)));
-
-    for(int Lin = 0; Lin < winLin; Lin++)
-        for(int Col = 0; Col < winCol; Col++)
-            Win[Lin][Col] = winL[Lin] * winC[Col];
-
-    delete winL;
-    delete winC;
-
-}
 float   gauss2d(float x, float y, float s){
     float xx;
     if(s == 0) return 0.0;

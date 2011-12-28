@@ -1,562 +1,159 @@
 #include "metric.h"
 
-
-void    packet_loss(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,QString fName)
+double   blockingVlachos(cv::Mat & src)
 {
-    return ;
+    double block_metric = 0;
+
+    double inter_similarity;
+    double intra_similarity;
+
+    double max_c1,max_c2,max_c3;
+    double max_c4,max_c5,max_c6;
+
+    cv::Mat s1(src.rows/8,src.cols/8,src.type());
+    cv::Mat s2(src.rows/8,src.cols/8,src.type());
+    cv::Mat s3(src.rows/8,src.cols/8,src.type());
+    cv::Mat s4(src.rows/8,src.cols/8,src.type());
+    cv::Mat s5(src.rows/8,src.cols/8,src.type());
+    cv::Mat s6(src.rows/8,src.cols/8,src.type());
+    cv::Mat s7(src.rows/8,src.cols/8,src.type());
+
+    cv::Mat c1(src.rows/8,src.cols/8,src.type());
+    cv::Mat c2(src.rows/8,src.cols/8,src.type());
+    cv::Mat c3(src.rows/8,src.cols/8,src.type());
+    cv::Mat c4(src.rows/8,src.cols/8,src.type());
+    cv::Mat c5(src.rows/8,src.cols/8,src.type());
+    cv::Mat c6(src.rows/8,src.cols/8,src.type());
+
+    downsample(src,s1,7,7);
+    downsample(src,s2,0,7);
+    downsample(src,s3,7,0);
+    downsample(src,s4,0,0);
+    downsample(src,s5,0,1);
+    downsample(src,s6,1,0);
+    downsample(src,s7,1,1);
+
+    corr2D(s4,s5,c1);
+    corr2D(s4,s6,c2);
+    corr2D(s4,s7,c3);
+
+    corr2D(s1,s2,c4);
+    corr2D(s1,s3,c5);
+    corr2D(s1,s4,c6);
+
+    cv::minMaxLoc(c1,0,&max_c1);
+    cv::minMaxLoc(c2,0,&max_c2);
+    cv::minMaxLoc(c3,0,&max_c3);
+    cv::minMaxLoc(c4,0,&max_c4);
+    cv::minMaxLoc(c5,0,&max_c5);
+    cv::minMaxLoc(c6,0,&max_c6);
+
+    intra_similarity = max_c1+max_c2+max_c3;
+    inter_similarity = max_c4+max_c5+max_c6;
+
+    if(inter_similarity != 0.0)
+        block_metric = (intra_similarity/inter_similarity);
+
+    return block_metric;
 }
 
-
-
-#define measure_lines_v2_LIMIAR (90/255);
-void    measure_lines_v2(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,QString fName)
+double  blurringWinkler(cv::Mat & src,double threshold1,double threshold2,int aperture_size,BlurWinklerType output_options)
 {
-    int i,x,y,pos;
-    int frame_nr;
+    double blur_index = 0;
+    double blur_min = -1;
+    double blur_max = 1000;
 
-    int count = 0;
-    int count2 = 0;
+    cv::Mat edges(src.rows,src.cols,src.type());
+    cv::Canny(src,edges,threshold1,threshold2,aperture_size);
 
-    uchar  ** cframeY;
-    uchar  ** dif;    /** Diferencas entre as bordas, sem limiar */
-    uchar  ** dif2;   /** Diferencas entre as bordas consideradas significantes */
-    uchar  ** dif3;   /** Diferencas entre as bordas contando os vizinhos */
+    int    index = 0;
+    int    p1,  p2, k;
+    int    length = 0;
+    double max, min;
+    double dif, grad;
+    double mean_length_right = 0;
+    double mean_length_left  = 0;
+    double mean_length       = 0;
 
-    cframeY = AllocateMatrix<uchar>(sizeX,sizeY);
-    dif     = AllocateMatrix<uchar>(sizeX,sizeY);
-    dif2    = AllocateMatrix<uchar>(sizeX,sizeY);
-    dif3    = AllocateMatrix<uchar>(sizeX,sizeY);
+    for(int i = 0; i < src.rows; ++i){
+        for(int j = 0; j < src.cols; ++j){
 
-    int dif_inter;
-    int dif_intra;
+            if(edges.at<uchar>(i,j) > 0){
+                index++;
+                /** Lado direito da borda */
+                dif  = src.at<uchar>(i,j+1) - src.at<uchar>(i,j);
+                grad = (dif > 0) ? 1 : -1;
 
-    /// Dump para o arquivo fName
-    QFile        f_output;
-    QTextStream  ts(&f_output);
-
-    if(f_output.isOpen()) f_output.close();
-
-    fName.remove(".yuv");
-    fName.append("_packet_loss.txt");
-
-    f_output.setFileName(fName);
-    f_output.open(QIODevice::WriteOnly);
-
-    ts << "Frame"
-       << "\t"
-       << "Perda de pacotes(sem contar bordas vizinhas)"
-       << "\t"
-       << "Perda de pacotes(contando bordas vizinhas)"
-       << "\n";
-
-    /// Processamento quadro a quadro
-    for(frame_nr = 0; frame_nr < total_frame_nr; ++frame_nr){
-
-        x = 0;
-        y = 0;
-        pos = frame_nr*sizeX*sizeY;
-
-        for(i = 0; i < sizeX*sizeY; ++i){
-            cframeY[x][y] = *(ybuf+pos+i);
-            ++x;
-            if(x == sizeX)
-                x = 0, ++y;
-        }
-
-        /// Teste das bordas 16 x 16
-        for(x = 0; x <= sizeX; x += 16){
-            for(y = 0; y <= sizeY; y += 16){
-                /// Linhas
-                /// Índices dentro da imagem
-                if((x > 0) && ((x + 15) < sizeX)){ // 14 ou 15?
-                    /// Borda superior do bloco
-                    dif_inter = 0;
-                    dif_intra = 0;
-                    for(i = 0; i < 15 ; ++i){    // 14 ou 15?
-                        dif_inter += abs(cframeY[x][y+i]-cframeY[x-1][y+i]);
-                        dif_intra += abs(cframeY[x][y+i]-cframeY[x+1][y+i]);    /// Do lado de dentro da borda
+                if(grad > 0){
+                    p2  = -1;
+                    k   = j;
+                    max = src.at<uchar>(i,k);
+                    while((max < src.at<uchar>(i,k+1))&&(k<src.cols)){
+                        max = src.at<uchar>(i,k++);
+                        p2  = k;
                     }
-                    for(i = 0; i < 15 ; ++i){
-                        dif[x][y+i]   = dif_inter;
-                        dif[x+1][y+i] = dif_intra;
-                        /// Repensar esta estória...
-                        if((dif_inter > (90/255)) && ((dif_inter/dif_intra) > 1)){ /** @todo substituir 90/255 por macro */
-                            dif2[x][y+i] = 1;
-                            count++;
-                        }
-                    }
-                    /// Borda inferior do bloco
-                    dif_inter = 0;
-                    dif_intra = 0;
-                    for(i = 0; i < 15 ; ++i){    // 14 ou 15?
-                        dif_inter += abs(cframeY[x+15][y+i]-cframeY[x+16][y+i]);
-                        dif_intra += abs(cframeY[x+15][y+i]-cframeY[x+14][y+i]);
-                    }
-                    for(i = 0; i < 15 ; ++i){
-                        dif[x+14][y+i] = dif_inter;
-                        dif[x+15][y+i] = dif_intra;
-                        if((dif_inter > (90/255)) && ((dif_inter/dif_intra) > 1)){ /** @todo substituir 90/255 por macro */
-                            dif2[x+15][y+i] = 1;
-                            count++;
-                        }
-                    }
-                }else if(x <= 0){
-                    /// Borda inferior do bloco
-                    dif_inter = 0;
-                    dif_intra = 0;
-                    for(i = 0; i < 15 ; ++i){    // 14 ou 15?
-                        dif_inter += abs(cframeY[x+15][y+i]-cframeY[x+16][y+i]);
-                        dif_intra += abs(cframeY[x+15][y+i]-cframeY[x+14][y+i]);
-                    }
-                    for(i = 0; i < 15 ; ++i){
-                        dif[x+14][y+i] = dif_inter;
-                        dif[x+15][y+i] = dif_intra;
-                        if((dif_inter > (90/255)) && ((dif_inter/dif_intra) > 1)){ /** @todo substituir 90/255 por macro */
-                            dif2[x+15][y+i] = 1;
-                            count++;
-                        }
-                    }
-                }else if((x+15) >= sizeX){
-                    /// Borda superior do bloco
-                    dif_inter = 0;
-                    dif_intra = 0;
-                    for(i = 0; i < 15 ; ++i){    // 14 ou 15?
-                        dif_inter += abs(cframeY[x][y+i]-cframeY[x-1][y+i]);
-                        dif_intra += abs(cframeY[x][y+i]-cframeY[x+1][y+i]);
-                    }
-                    for(i = 0; i < 15 ; ++i){
-                        dif[x][y+i]   = dif_inter;
-                        dif[x+1][y+i] = dif_intra;
-                        if((dif_inter > (90/255)) && ((dif_inter/dif_intra) > 1)){ /** @todo substituir 90/255 por macro */
-                            dif2[x][y+i] = 1;
-                            count++;
-                        }
+                }else if(grad < 0)
+                {
+                    p2  = -1;
+                    k   = j;
+                    min = src.at<uchar>(i,k);
+                    while((min > src.at<uchar>(i,k+1))&&(k<src.cols)){
+                        min = src.at<uchar>(i,k++);
+                        p2  = k;
                     }
                 }
-                /// Colunas
-                /// Índices dentro da imagem
-                if((y > 0) && ((y+15) < sizeY)){
-                    /// Borda esquerda do bloco
-                    dif_inter = 0;
-                    dif_intra = 0;
-                    for(i = 0; i < 15 ; ++i){    // 14 ou 15?
-                        dif_inter += abs(cframeY[x+i][y]-cframeY[x+i][y-1]);
-                        dif_intra += abs(cframeY[x+i][y]-cframeY[x+i][y+1]);
+
+                length = abs(j - p2);
+                mean_length_right += length;
+
+                /** Lado esquerdo da borda */
+                dif  = src.at<uchar>(i,j-1) - src.at<uchar>(i,j);
+                grad = (dif > 0) ? 1 : -1;
+
+                if(grad > 0){
+                    p1  = -1;
+                    k   = j;
+                    max = src.at<uchar>(i,k);
+                    while((max<src.at<uchar>(i,k-1))&&(k>1)){
+                        max = src.at<uchar>(i,k--);
+                        p1  = k;
                     }
-                    for(i = 0; i < 15 ; ++i){
-                        dif[x+i][y]   = dif_inter;
-                        dif[x+i][y+1] = dif_intra;
-                        if((dif_inter > (90/255)) && ((dif_inter/dif_intra) > 1)){ /** @todo substituir 90/255 por macro */
-                            dif2[x+i][y] = 1;
-                            count++;
-                        }
-                    }
-                    /// Borda direita do bloco
-                    dif_inter = 0;
-                    dif_intra = 0;
-                    for(i = 0; i < 15 ; ++i){    // 14 ou 15?
-                        dif_inter += abs(cframeY[x+i][y+15]-cframeY[x+i][y+14]);
-                        dif_intra += abs(cframeY[x+i][y+15]-cframeY[x+i][y+16]);
-                    }
-                    for(i = 0; i < 15 ; ++i){
-                        dif[x+i][y+15] = dif_inter;
-                        dif[x+i][y+14] = dif_intra;
-                        if((dif_inter > (90/255)) && ((dif_inter/dif_intra) > 1)){ /** @todo substituir 90/255 por macro */
-                            dif2[x+i][y+15] = 1;
-                            count++;
-                        }
-                    }
-                }else if(y <= 0){
-                    /// Borda direita do bloco
-                    dif_inter = 0;
-                    dif_intra = 0;
-                    for(i = 0; i < 15 ; ++i){    // 14 ou 15?
-                        dif_inter += abs(cframeY[x+i][y+15]-cframeY[x+i][y+14]);
-                        dif_intra += abs(cframeY[x+i][y+15]-cframeY[x+i][y+16]);
-                    }
-                    for(i = 0; i < 15 ; ++i){
-                        dif[x+i][y+15] = dif_inter;
-                        dif[x+i][y+14] = dif_intra;
-                        if((dif_inter > (90/255)) && ((dif_inter/dif_intra) > 1)){ /** @todo substituir 90/255 por macro */
-                            dif2[x+i][y+15] = 1;
-                            count++;
-                        }
-                    }
-                }else if((y+15) >= sizeY){
-                    /// Borda esquerda do bloco
-                    dif_inter = 0;
-                    dif_intra = 0;
-                    for(i = 0; i < 15 ; ++i){    // 14 ou 15?
-                        dif_inter += abs(cframeY[x+i][y]-cframeY[x+i][y-1]);
-                        dif_intra += abs(cframeY[x+i][y]-cframeY[x+i][y+1]);
-                    }
-                    for(i = 0; i < 15 ; ++i){
-                        dif[x+i][y]   = dif_inter;
-                        dif[x+i][y+1] = dif_intra;
-                        if((dif_inter > (90/255)) && ((dif_inter/dif_intra) > 1)){ /** @todo substituir 90/255 por macro */
-                            dif2[x+i][y] = 1;
-                            count++;
-                        }
+                }else if(grad < 0)
+                {
+                    p1  = -1;
+                    k   = j;
+                    min = src.at<uchar>(i,k);
+                    while((min>src.at<uchar>(i,k-1))&&(k>1)){
+                        min = src.at<uchar>(i,k--);
+                        p1  = k;
                     }
                 }
-                // COUNT(i:i+15,j:j+15)=count;
+
+                length = abs(j - p1);
+                mean_length_left += length;
             }
+
         }
-
-        /// Reajuste das bordas para contar a vizinhanca
-        for(x = 0; x <= sizeX; x += 16){
-            for(y = 0; y <= sizeY; y += 16){
-                count2 = 0; /// Contador de bordas
-
-                /// Linhas e colunas centrais
-                if((x > 0) && ((x+15) < sizeX) && (y > 0) && ((y+15) < sizeY)){
-                    for(i = 0; i < 15; ++i){
-                        /// Borda superior ou inferior do bloco anterior
-                        if(dif2[x][y+i] || dif2[x-1][y+i]){
-                            dif3[x][y+i] = 1;
-                            count2++;
-                        }
-                        /// Borda superior ou inferior do bloco seguinte
-                        if(dif2[x+15][y+i] || dif2[x+16][y+i]){
-                            dif3[x+15][y+i] = 1;
-                            count2++;
-                        }
-                        /// Borda da esquerda ou da direita do bloco anterior
-                        if(dif2[x+i][y] || dif2[x+i][y-1]){
-                            dif3[x+i][y] = 1;
-                            count2++;
-                        }
-                        /// Borda da esquerda ou da direita do bloco seguinte
-                        if(dif2[x+i][y+15] || dif2[x+i][y+16]){
-                            dif3[x+i][y+15] = 1;
-                            count2++;
-                        }
-                    }
-                }else if((x == 0) && (y > 0) && ((y+15)<sizeY)){
-                    for(i = 0; i < 15; ++i){
-                        if(dif2[x+15][y+i] || dif2[x+16][y+i]){
-                            dif3[x+15][y+i] = 1;
-                            count2++;
-                        }
-                        if(dif2[x+i][y] || dif2[x+i][y-1]){
-                            dif3[x+i][y] = 1;
-                            count2++;
-                        }
-                        if(dif2[x+i][y+15] || dif2[x+i][y+16]){
-                            dif3[x+i][y+15] = 1;
-                            count2++;
-                        }
-                    }
-                }else if(((x+15) >= sizeX) && (y > 0) && ((y+15)<sizeY)){
-                    for(i = 0; i < 15; ++i){
-                        if(dif2[x][y+i] || dif2[x-1][y+i]){
-                            dif3[x][y+i] = 1;
-                            count2++;
-                        }
-                        if(dif2[x+i][y] || dif2[x+i][y-1]){
-                            dif3[x+i][y] = 1;
-                            count2++;
-                        }
-                        if(dif2[x+i][y+15] || dif2[x+i][y+16]){
-                            dif3[x+i][y+15] = 1;
-                            count2++;
-                        }
-                    }
-                }else if((x > 0) && ((x+15)<sizeX) && (y==0)){
-                    if(dif2[x][y+i] || dif2[x-1][y+i]){
-                        dif3[x][y+i] = 1;
-                        count2++;
-                    }
-                    if(dif2[x+15][y+i] || dif2[x+16][y+i]){
-                        dif3[x+15][y+i] = 1;
-                        count2++;
-                    }
-                    if(dif2[x+i][y+15] || dif2[x+i][y+16]){
-                        dif3[x+i][y+15] = 1;
-                        count2++;
-                    }
-                }else if((x > 0) && ((x+15)<sizeX) && ((y+15)>=sizeY)){
-                    if(dif2[x][y+i] || dif2[x-1][y+i]){
-                        dif3[x][y+i] = 1;
-                        count2++;
-                    }
-                    if(dif2[x+15][y+i] || dif2[x+16][y+i]){
-                        dif3[x+15][y+i] = 1;
-                        count2++;
-                    }
-                    if(dif2[x+i][y] || dif2[x+i][y-1]){
-                        dif3[x+i][y] = 1;
-                        count2++;
-                    }
-                }
-
-            }
-        }
-
-        ts << frame_nr
-           << "\t"
-           << count
-           << "\t"
-           << count2
-           << "\n";
     }
 
-    FreeMatrix(cframeY,sizeX);
-    FreeMatrix(dif,sizeX);
-    FreeMatrix(dif2,sizeX);
-    FreeMatrix(dif3,sizeX);
-    f_output.close();
+    mean_length = (mean_length_left/index + mean_length_right/index)/2;
+    blur_index  = mean_length;
 
-}
-
-void    blockingVlachos(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,QString fName)
-{
-         int i,x,y,pos;
-         int frame_nr;
-
-
-         uchar  ** cframeY;
-         double ** hWindow;
-         uchar  ** s1,** s2,** s3,** s4,
-                ** s5,** s6,** s7;
-
-         double inter_similarity;
-         double intra_similarity;
-
-         double block_metric;
-
-         int subsizeX = sizeX/8;
-         int subsizeY = sizeY/8;
-
-         QFile          f_output;
-         QTextStream    ts(&f_output);
-
-         if(f_output.isOpen()) f_output.close();
-
-         fName.remove(".yuv");
-         fName.append("_vlachos.txt");
-
-         f_output.setFileName(fName);
-         f_output.open(QIODevice::WriteOnly);
-
-         cframeY = AllocateMatrix<uchar>(sizeX,sizeY);
-         hWindow     = AllocateMatrix<double>(sizeX,sizeY);
-
-         hammingWindow(hWindow,sizeY,sizeX);
-         s1 = AllocateMatrix<uchar>(subsizeX,subsizeY);
-         s2 = AllocateMatrix<uchar>(subsizeX,subsizeY);
-         s3 = AllocateMatrix<uchar>(subsizeX,subsizeY);
-         s4 = AllocateMatrix<uchar>(subsizeX,subsizeY);
-         s5 = AllocateMatrix<uchar>(subsizeX,subsizeY);
-         s6 = AllocateMatrix<uchar>(subsizeX,subsizeY);
-         s7 = AllocateMatrix<uchar>(subsizeX,subsizeY);
-
-         ts << "Frame \tBlocagem \n";
-
-         for(frame_nr = 0; frame_nr < total_frame_nr; ++frame_nr){
-
-             x = 0;
-             y = 0;
-             pos = frame_nr*sizeX*sizeY;
-
-             for(i = 0; i < sizeX*sizeY; ++i){
-                 cframeY[x][y] = *(ybuf+pos+i) * hWindow[x][y];
-                 ++x;
-                 if(x == sizeX)
-                     x = 0, ++y;
-             }
-
-             inter_similarity = 0;
-             intra_similarity = 0;
-
-             downsample<uchar>(cframeY, s1,7,7,8,8,sizeX,sizeY);
-             downsample<uchar>(cframeY, s2,0,7,8,8,sizeX,sizeY);
-             downsample<uchar>(cframeY, s3,7,0,8,8,sizeX,sizeY);
-             downsample<uchar>(cframeY, s4,0,0,8,8,sizeX,sizeY);
-             downsample<uchar>(cframeY, s5,0,1,8,8,sizeX,sizeY);
-             downsample<uchar>(cframeY, s6,1,0,8,8,sizeX,sizeY);
-             downsample<uchar>(cframeY, s7,1,1,8,8,sizeX,sizeY);
-
-             intra_similarity += Peak_Correlation(s4,s5,subsizeX,subsizeY);
-             intra_similarity += Peak_Correlation(s4,s6,subsizeX,subsizeY);
-             intra_similarity += Peak_Correlation(s4,s7,subsizeX,subsizeY);
-
-             inter_similarity += Peak_Correlation(s1,s2,subsizeX,subsizeY);
-             inter_similarity += Peak_Correlation(s1,s3,subsizeX,subsizeY);
-             inter_similarity += Peak_Correlation(s1,s4,subsizeX,subsizeY);
-
-             if(inter_similarity != 0.0){
-                 block_metric = (intra_similarity/inter_similarity);
-             }else{
-                 block_metric = 0;
-             }
-
-             ts << frame_nr
-                << "\t"
-                << block_metric
-                << "\n";
-         }
-
-         FreeMatrix(cframeY,sizeX);
-         FreeMatrix(s1,subsizeX);
-         FreeMatrix(s2,subsizeX);
-         FreeMatrix(s3,subsizeX);
-         FreeMatrix(s4,subsizeX);
-         FreeMatrix(s5,subsizeX);
-         FreeMatrix(s6,subsizeX);
-         FreeMatrix(s7,subsizeX);
-
-         f_output.close();
-}
-
-void    blurringWinkler(int sizeX,int sizeY,int total_frame_nr,uchar * ybuf,int high,int low,float s,float (*norm)(float,float),QString fName)
-{
-    int i,j,k,x,y,pos;
-    int index = 0;
-    int frame_nr;
-
-    double blur_index, blur_avg=0, blur_max=-1, blur_min=1000;
-
-    uchar ** cframeY;
-    uchar ** edges;
-
-    cframeY = AllocateMatrix<uchar>(sizeX,sizeY);
-    edges   = AllocateMatrix<uchar>(sizeX,sizeY);
-
-    QFile        f_output;
-    QTextStream  ts(&f_output);
-
-    if(f_output.isOpen()) f_output.close();
-
-    fName.remove(".yuv");
-    fName.append("_blur.txt");
-
-    f_output.setFileName(fName);
-    f_output.open(QIODevice::WriteOnly);
-    ts << "Frame\tBorragem\n";
-
-    for(frame_nr = 0; frame_nr < total_frame_nr; ++frame_nr){
-
-        blur_index = 0;
-        x = 0;
-        y = 0;
-        pos = frame_nr*sizeX*sizeY;
-
-        for(i = 0; i < sizeX*sizeY; ++i){
-            cframeY[x][y] = *(ybuf+pos+i);
-            ++x;
-            if(x == sizeX)
-                x = 0, ++y;
-        }
-
-        cannyEdge(sizeX,sizeY,cframeY,high,low,s,norm,edges);
-
-        /* verificar ordem de alinhamento de sizeX e sizeY esta certa */
-        int    p1,  p2;
-        int    length = 0;
-        double max, min;
-        double dif, grad;
-        double mean_length_right = 0;
-        double mean_length_left  = 0;
-        double mean_length       = 0;
-
-
-        for(i = 0; i < sizeY; ++i){
-            for(j = 0; j < sizeX; ++j){
-
-                if(edges[i][j] > 0){
-
-                    index++;
-
-                    /* Lado direito da borda      */
-                    /* Checa por maximo ou minimo */
-                    dif  = cframeY[i][j+1] - cframeY[i][j];
-                    grad = (dif > 0) ? 1 : -1;
-
-                    if(grad > 0){
-
-                        p2  = -1;
-                        k   = j;
-                        max = cframeY[i][k];
-                        while((max<cframeY[i][k+1])&&(k<sizeX)){
-                            max = cframeY[i][k++];
-                            p2  = k;
-                        }
-                    }
-                    else if(grad < 0)
-                    {
-                        p2  = -1;
-                        k   = j;
-                        min = cframeY[i][k];
-                        while((min>cframeY[i][k+1])&&(k<sizeX)){
-                            min = cframeY[i][k++];
-                            p2  = k;
-                        }
-                    }
-
-                    length             = abs(j - p2);
-                    mean_length_right += length;
-
-                    /* Lado esquerdo da borda     */
-                    /* Checa por maximo ou minimo */
-                    dif  = cframeY[i][j-1] - cframeY[i][j];
-                    grad = (dif > 0) ? 1 : -1;
-
-                    if(grad > 0){
-
-                        p1  = -1;
-                        k   = j;
-                        max = cframeY[i][k];
-                        while((max<cframeY[i][k-1])&&(k>1)){
-                            max = cframeY[i][k--];
-                            p1  = k;
-                        }
-                    }
-                    else if(grad < 0)
-                    {
-                        p1  = -1;
-                        k   = j;
-                        min = cframeY[i][k];
-                        while((min>cframeY[i][k-1])&&(k>1)){
-                            min = cframeY[i][k--];
-                            p1  = k;
-                        }
-                    }
-
-                    length             = abs(j - p1);
-                    mean_length_left += length;
-                }
-            }
-        }
-
-        mean_length = (mean_length_left/index + mean_length_right/index)/2;
-        blur_index  = mean_length;
-
-        blur_avg += blur_index;
-        if (blur_index > blur_max)
-                blur_max=blur_index;
-        if (blur_index < blur_min)
-                blur_min = blur_index;
-        // write results for frame in file
-        ts << frame_nr
-           << "\t"
-           << blur_index
-           << "\n";
+    switch(output_options){
+        case BLUR_INDEX:
+            return blur_index;
+        case BLUR_MIN:
+        if(blur_index < blur_min)
+            blur_min = blur_index;
+            return blur_min;
+        case BLUR_MAX:
+        if(blur_index > blur_max)
+            blur_max = blur_index;
+            return blur_max;
+        default:
+            break;
     }
-    blur_avg /= total_frame_nr; // avg value for blur
-    // Add avg, min and max values to the file
-    ts << "Avg value = "
-       << blur_avg
-       << "\t Max value = "
-       << blur_max
-       << "\t Min value = "
-       << blur_min
-       << "\n";
-
-    FreeMatrix(cframeY,sizeX);
-    FreeMatrix(edges,sizeX);
-
-    f_output.close();
+    return 0.0;
 }
 
 double SSIM(cv::Mat& src1,
