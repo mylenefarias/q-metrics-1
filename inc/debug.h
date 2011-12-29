@@ -23,4 +23,12 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
+
+#include <iostream>
+#include <string>
+
+void writeFrame(cv::Mat & src, string fName);
+
 #endif // DEBUG_H

@@ -1,5 +1,6 @@
 #include <img.hpp>
 
+/// @todo Talvez o uso de um template aqui seja mais sensato
 void downsample(const cv::Mat & src,
                 cv::Mat & dest,
                 const int initRow,
@@ -8,21 +9,33 @@ void downsample(const cv::Mat & src,
                 const int ratioCol)
 {
     int i1 = 0, j1 = 0;
+    assert(src.type() == dest.type());
 
-    for(int i = initRow; i < src.rows; i += ratioRow){
-        j1 = 0;
-        for(int j = initCol; j < src.cols; j += ratioCol){
-            dest.at<uchar>(i1,j1) = src.at<uchar>(i,j);
-            j1++;
+    if(src.type() == CV_8UC1){
+        for(int i = initRow; i < src.rows; i += ratioRow){
+            j1 = 0;
+            for(int j = initCol; j < src.cols; j += ratioCol){
+                dest.at<uchar>(i1,j1) = src.at<uchar>(i,j);
+                j1++;
+            }
+            i1++;
         }
-        i1++;
+    }
+    if(src.type() == CV_64FC1){
+        for(int i = initRow; i < src.rows; i += ratioRow){
+            j1 = 0;
+            for(int j = initCol; j < src.cols; j += ratioCol){
+                dest.at<double>(i1,j1) = src.at<double>(i,j);
+                j1++;
+            }
+            i1++;
+        }
     }
 
     return ;
 }
 
-
-void corr2D(const cv::Mat & src1,const cv::Mat & src2,cv::Mat & dest)
+double maxCorr2D(const cv::Mat & src1,const cv::Mat & src2)
 {
     int i,j,k;
     double mag;
@@ -40,10 +53,10 @@ void corr2D(const cv::Mat & src1,const cv::Mat & src2,cv::Mat & dest)
 
     for(i = 0,k = 0; i < height; i++){
         for(j = 0; j < width; j++,k++){
-            img1[k][0] = (double) src1.at<uchar>(i,j);
+            img1[k][0] = src1.at<double>(i,j);
             img1[k][1] = 0.0;
 
-            img2[k][0] = (double) src2.at<uchar>(i,j);
+            img2[k][0] = src2.at<double>(i,j);
             img2[k][1] = 0.0;
         }
     }
@@ -51,7 +64,7 @@ void corr2D(const cv::Mat & src1,const cv::Mat & src2,cv::Mat & dest)
     fftw_execute(fft_img1);
     fftw_execute(fft_img2);
 
-    double fft_size = (height*width);
+    int fft_size = (height*width);
 
     for(i = 0; i < fft_size; ++i){
         res[i][0] = (img2[i][0] * img1[i][0]) - (img2[i][1] * (-img1[i][1]));
@@ -65,8 +78,11 @@ void corr2D(const cv::Mat & src1,const cv::Mat & src2,cv::Mat & dest)
 
     fftw_execute(ifft_res);
 
+    double max;
+    max = -INFINITY;
     for(i = 0; i < fft_size; ++i){
-        dest.data[i] = (res[i][0]/fft_size);
+        if( ((double)res[i][0]) > max)
+            max = ((double)res[i][0]);
     }
 
     fftw_destroy_plan(fft_img1);
@@ -76,7 +92,7 @@ void corr2D(const cv::Mat & src1,const cv::Mat & src2,cv::Mat & dest)
     fftw_free(img2);
     fftw_free(res);
 
-    return;
+    return max;
 }
 
 void conv2D(const cv::Mat &img, cv::Mat& dest, const cv::Mat& kernel, ConvolutionType ctype, int btype) {
@@ -101,6 +117,19 @@ void conv2D(const cv::Mat &img, cv::Mat& dest, const cv::Mat& kernel, Convolutio
     dest = dest.colRange((kernel.cols-1)/2, dest.cols - kernel.cols/2)
                .rowRange((kernel.rows-1)/2, dest.rows - kernel.rows/2);
   }
+}
+
+void windowHamming(const cv::Mat & src,cv::Mat & dest)
+{
+    double ftmp = M_PI/(double)src.rows;
+    for(int i = 0; i < src.rows; ++i){
+        double wr = (0.54 + 0.46*cos(ftmp*((double)i+0.5)));
+        for(int j = 0; j < src.cols; ++j){
+            double wc = (0.54 + 0.46*cos(ftmp*((double)j+0.5)));
+
+            dest.at<double>(i,j) = ((double)src.at<uchar>(i,j)) * wr * wc;
+        }
+    }
 }
 
 void filterLawsH(cv::Mat & src,cv::Mat & dest,float r=48.0)

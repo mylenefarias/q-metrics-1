@@ -2,57 +2,41 @@
 
 double   blockingVlachos(cv::Mat & src)
 {
-    double block_metric = 0;
+    double block_metric;
 
     double inter_similarity;
     double intra_similarity;
 
-    double max_c1,max_c2,max_c3;
-    double max_c4,max_c5,max_c6;
+    int subrows = src.rows/8;
+    int subcols = src.cols/8;
 
-    cv::Mat s1(src.rows/8,src.cols/8,src.type());
-    cv::Mat s2(src.rows/8,src.cols/8,src.type());
-    cv::Mat s3(src.rows/8,src.cols/8,src.type());
-    cv::Mat s4(src.rows/8,src.cols/8,src.type());
-    cv::Mat s5(src.rows/8,src.cols/8,src.type());
-    cv::Mat s6(src.rows/8,src.cols/8,src.type());
-    cv::Mat s7(src.rows/8,src.cols/8,src.type());
+    cv::Mat src_w(src.rows,src.cols,CV_64FC1);
+    windowHamming(src,src_w);
 
-    cv::Mat c1(src.rows/8,src.cols/8,src.type());
-    cv::Mat c2(src.rows/8,src.cols/8,src.type());
-    cv::Mat c3(src.rows/8,src.cols/8,src.type());
-    cv::Mat c4(src.rows/8,src.cols/8,src.type());
-    cv::Mat c5(src.rows/8,src.cols/8,src.type());
-    cv::Mat c6(src.rows/8,src.cols/8,src.type());
+    cv::Mat s1(subrows,subcols,CV_64FC1);
+    cv::Mat s2(subrows,subcols,CV_64FC1);
+    cv::Mat s3(subrows,subcols,CV_64FC1);
+    cv::Mat s4(subrows,subcols,CV_64FC1);
+    cv::Mat s5(subrows,subcols,CV_64FC1);
+    cv::Mat s6(subrows,subcols,CV_64FC1);
+    cv::Mat s7(subrows,subcols,CV_64FC1);
 
-    downsample(src,s1,7,7);
-    downsample(src,s2,0,7);
-    downsample(src,s3,7,0);
-    downsample(src,s4,0,0);
-    downsample(src,s5,0,1);
-    downsample(src,s6,1,0);
-    downsample(src,s7,1,1);
+    downsample(src_w,s1,7,7);
+    downsample(src_w,s2,0,7);
+    downsample(src_w,s3,7,0);
+    downsample(src_w,s4,0,0);
+    downsample(src_w,s5,0,1);
+    downsample(src_w,s6,1,0);
+    downsample(src_w,s7,1,1);
 
-    corr2D(s4,s5,c1);
-    corr2D(s4,s6,c2);
-    corr2D(s4,s7,c3);
+    intra_similarity = maxCorr2D(s4,s5) + maxCorr2D(s4,s6) + maxCorr2D(s4,s7);
+    inter_similarity = maxCorr2D(s1,s2) + maxCorr2D(s1,s3) + maxCorr2D(s1,s4);
 
-    corr2D(s1,s2,c4);
-    corr2D(s1,s3,c5);
-    corr2D(s1,s4,c6);
-
-    cv::minMaxLoc(c1,0,&max_c1);
-    cv::minMaxLoc(c2,0,&max_c2);
-    cv::minMaxLoc(c3,0,&max_c3);
-    cv::minMaxLoc(c4,0,&max_c4);
-    cv::minMaxLoc(c5,0,&max_c5);
-    cv::minMaxLoc(c6,0,&max_c6);
-
-    intra_similarity = max_c1+max_c2+max_c3;
-    inter_similarity = max_c4+max_c5+max_c6;
-
-    if(inter_similarity != 0.0)
+    if(inter_similarity != 0){
         block_metric = (intra_similarity/inter_similarity);
+    }else{
+        block_metric = 0;
+    }
 
     return block_metric;
 }
@@ -63,7 +47,7 @@ double  blurringWinkler(cv::Mat & src,double threshold1,double threshold2,int ap
     double blur_min = -1;
     double blur_max = 1000;
 
-    cv::Mat edges(src.rows,src.cols,src.type());
+    cv::Mat edges(src.rows,src.cols,CV_8UC1);
     cv::Canny(src,edges,threshold1,threshold2,aperture_size);
 
     int    index = 0;

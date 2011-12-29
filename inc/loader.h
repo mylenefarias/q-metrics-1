@@ -8,6 +8,8 @@
 
 #include <opencv/ml.h>
 
+// Esses cabecalhos sao necessarios para a leitura do tamanho
+// do arquivo a partir do file descriptor:
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -24,15 +26,17 @@ class Loader
                 Loader (string,int,int,int);
                 ~Loader();
 
-                void    learnCodebook(string);
-                void    callDebug();
-                void    callMetrics();
-
-                void    setSize(int, int);
                 uchar*  getYUVBuffer() const;
                 int     getTotalFrameNr() const;
 
                 long    getFileSize(FILE *hFile);
+
+                void    writeCodebook(string, float DMOS);
+                void    callDebug();
+                void    callMetrics();
+                void    showFrame(int i);
+
+                double mean(vector<double> v);
 private:
 
                 FILE * file;
@@ -42,13 +46,8 @@ private:
 
                 int 	sizeX;          /// Numero de linhas  (altura)
                 int 	sizeY;          /// Numero de colunas (largura)
-                int 	frequency;      /// Frequencia do video
                 int 	format;         /// Formato do video (444,422,420,400)
                 int     total_frame_nr;	/// Numero total de frames
-
-                uchar   *ybuf;          /// Buffer para a luminancia (Y)
-
-                int	 yuvbuffersize;     /// Tamanho de *yuvbuf
 
 };
 

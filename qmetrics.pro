@@ -5,23 +5,22 @@
 #-------------------------------------------------
 
 TEMPLATE = app
-TARGET     = qmetrics
+TARGET   = qmetrics
 
 DEPENDPATH += . inc src
 INCLUDEPATH += . inc
 
-HEADERS +=  \
-           inc/mat.hpp  \
+HEADERS += inc/mat.hpp  \
            inc/img.hpp  \
            inc/metric.h \
            inc/debug.h  \
            inc/global.h \
            inc/loader.h \
-           inc/csf.h    \
-           inc/old/old_aux.hpp \
-           inc/old/old_img.hpp \
-           inc/old/old_metric.h \
-           inc/old/old_debug.h
+           inc/csf.h
+#          inc/old/old_aux.hpp \
+#          inc/old/old_img.hpp \
+#          inc/old/old_metric.h \
+#          inc/old/old_debug.h
 
 SOURCES += src/main.cpp   \
            src/mat.cpp    \
@@ -29,10 +28,10 @@ SOURCES += src/main.cpp   \
            src/metric.cpp \
            src/debug.cpp  \
            src/loader.cpp \
-           src/csf.cpp \
-           src/old/old_img.cpp \
-           src/old/old_metric.cpp \
-           src/old/old_debug.cpp
+           src/csf.cpp
+#          src/old/old_img.cpp \
+#          src/old/old_metric.cpp \
+#          src/old/old_debug.cpp
 
 # Configuracoes para linkar com o OpenCV 2.1 [Ubuntu 10.10]
 #INCLUDEPATH += /usr/include/opencv

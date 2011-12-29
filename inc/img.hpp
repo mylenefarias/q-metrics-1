@@ -24,8 +24,11 @@
 #define IMG_HPP
 
 #include <math.h>
+#include <assert.h>
+
 #include <mat.hpp>
 #include <opencv/cv.h>
+#include <opencv/highgui.h>
 
 #include "global.h"
 
@@ -35,7 +38,7 @@ enum ConvolutionType {
   CONVOLUTION_VALID /** Return only the submatrix containing elements that were not influenced by the border */
 };
 
-void corr2D(const cv::Mat & src1,const cv::Mat & src2,cv::Mat & dest);
+double maxCorr2D(const cv::Mat & src1,const cv::Mat & src2);
 void conv2D(const cv::Mat &img, cv::Mat& dest, const cv::Mat& kernel, ConvolutionType ctype = CONVOLUTION_SAME, int btype = cv::BORDER_DEFAULT);
 
 void downsample(const cv::Mat & src,
@@ -44,6 +47,9 @@ void downsample(const cv::Mat & src,
                 const int initCol,
                 const int ratioRow = 8,
                 const int ratioCol = 8);
+
+void windowHamming(const cv::Mat & src, cv::Mat &dest);
+
 
 /**
 * @brief Retorna em dest a convolucao com o filtro de textura de Laws no sentido horizontal

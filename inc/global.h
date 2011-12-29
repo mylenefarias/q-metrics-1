@@ -32,6 +32,8 @@
 #define HDTV_Y  720
 #define SHDTV_X 1920
 #define SHDTV_Y 1080
+#define LIVE_X  768
+#define LIVE_Y  432
 
 #define _400 0
 #define _420 1

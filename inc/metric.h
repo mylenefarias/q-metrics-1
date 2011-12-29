@@ -24,6 +24,7 @@
 #define METRIC_H
 
 #include <stdio.h>
+#include <iostream>
 
 #include "global.h"
 #include "mat.hpp"
@@ -40,7 +41,7 @@ double  blockingVlachos(cv::Mat & src);
 double  blurringWinkler(cv::Mat & src,
                         double threshold1 = 10,
                         double threshold2 = 200,
-                        int aperture_size = 1,
+                        int aperture_size = 3,
                         BlurWinklerType output_options = BLUR_INDEX);
 
 /**
