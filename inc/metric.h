@@ -30,19 +30,19 @@
 #include "mat.hpp"
 #include "img.hpp"
 
-enum    BlurWinklerType{
-    BLUR_INDEX,
-    BLUR_MIN,
-    BLUR_MAX
+enum    BlurWinklerOptions{
+    BW_EDGE_CANNY,
+    BW_EDGE_SOBEL,
+    BW_EDGE_SCHARR
 };
 
 
 double  blockingVlachos(cv::Mat & src);
 double  blurringWinkler(cv::Mat & src,
+                        BlurWinklerOptions options = BW_EDGE_CANNY,
                         double threshold1 = 10,
                         double threshold2 = 200,
-                        int aperture_size = 3,
-                        BlurWinklerType output_options = BLUR_INDEX);
+                        int aperture_size = 3);
 
 /**
 * @brief Calcula o SSIM entre duas imagens

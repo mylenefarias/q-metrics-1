@@ -31,12 +31,14 @@ class Loader
 
                 long    getFileSize(FILE *hFile);
 
-                void    writeCodebook(string, float DMOS);
+                void    writeCodebook(string fCodebook, float DMOS, int frames_in_word, int word_sizeX, int word_sizeY);
+
                 void    callDebug();
                 void    callMetrics();
                 void    showFrame(int i);
 
                 double mean(vector<double> v);
+
 private:
 
                 FILE * file;

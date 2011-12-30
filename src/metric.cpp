@@ -41,103 +41,100 @@ double   blockingVlachos(cv::Mat & src)
     return block_metric;
 }
 
-double  blurringWinkler(cv::Mat & src,double threshold1,double threshold2,int aperture_size,BlurWinklerType output_options)
+double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshold1,double threshold2,int aperture_size)
 {
     double blur_index = 0;
-    double blur_min = -1;
-    double blur_max = 1000;
 
     cv::Mat edges(src.rows,src.cols,CV_8UC1);
-    cv::Canny(src,edges,threshold1,threshold2,aperture_size);
 
-    int    index = 0;
-    int    p1,  p2, k;
-    int    length = 0;
-    double max, min;
-    double dif, grad;
-    double mean_length_right = 0;
-    double mean_length_left  = 0;
-    double mean_length       = 0;
+    if(options == BW_EDGE_CANNY){
+        cv::Canny(src,edges,threshold1,threshold2,aperture_size);
+    }else if(options == BW_EDGE_SOBEL){
+        cv::Sobel(src,edges,CV_8UC1,1,0);
+    }else if(options == BW_EDGE_SCHARR){
+        cv::Sobel(src,edges,CV_8UC1,1,0,CV_SCHARR);
+    }
+
+    unsigned int edge_counter = 0; /// Contador de bordas detectadas
+    int c_start; /// Indice do maximo ou minimo local vindo pela direita da borda
+    int c_end;   /// Indice do maximo ou minimo local vindo pela esquerda da borda
+    int k;
+
+    uchar  max = 0;
+    uchar  min = 255;
+
+    int length = 0;
 
     for(int i = 0; i < src.rows; ++i){
         for(int j = 0; j < src.cols; ++j){
 
             if(edges.at<uchar>(i,j) > 0){
-                index++;
-                /** Lado direito da borda */
-                dif  = src.at<uchar>(i,j+1) - src.at<uchar>(i,j);
-                grad = (dif > 0) ? 1 : -1;
-
-                if(grad > 0){
-                    p2  = -1;
-                    k   = j;
-                    max = src.at<uchar>(i,k);
-                    while((max < src.at<uchar>(i,k+1))&&(k<src.cols)){
-                        max = src.at<uchar>(i,k++);
-                        p2  = k;
-                    }
-                }else if(grad < 0)
-                {
-                    p2  = -1;
-                    k   = j;
-                    min = src.at<uchar>(i,k);
-                    while((min > src.at<uchar>(i,k+1))&&(k<src.cols)){
-                        min = src.at<uchar>(i,k++);
-                        p2  = k;
-                    }
-                }
-
-                length = abs(j - p2);
-                mean_length_right += length;
+                edge_counter++;
 
                 /** Lado esquerdo da borda */
-                dif  = src.at<uchar>(i,j-1) - src.at<uchar>(i,j);
-                grad = (dif > 0) ? 1 : -1;
-
-                if(grad > 0){
-                    p1  = -1;
-                    k   = j;
-                    max = src.at<uchar>(i,k);
-                    while((max<src.at<uchar>(i,k-1))&&(k>1)){
-                        max = src.at<uchar>(i,k--);
-                        p1  = k;
-                    }
-                }else if(grad < 0)
-                {
-                    p1  = -1;
-                    k   = j;
-                    min = src.at<uchar>(i,k);
-                    while((min>src.at<uchar>(i,k-1))&&(k>1)){
-                        min = src.at<uchar>(i,k--);
-                        p1  = k;
+                /** Condicao de contorno */
+                if(j == 0){
+                    c_start = 0;
+                }else{
+                    if((src.at<uchar>(i,j-1) - src.at<uchar>(i,j)) > 0){
+                        k   = j;
+                        max = src.at<uchar>(i,k);
+                        while((max <= src.at<uchar>(i,k-1))&&(k>1)){
+                            k--;
+                            max = src.at<uchar>(i,k);
+                            c_start  = k;
+                        }
+                        length += abs(j - c_start);
+                    }else if((src.at<uchar>(i,j-1) - src.at<uchar>(i,j)) < 0){
+                        k   = j;
+                        min = src.at<uchar>(i,k);
+                        while((min >= src.at<uchar>(i,k-1))&&(k>1)){
+                            k--;
+                            min = src.at<uchar>(i,k);
+                            c_start  = k;
+                        }
+                        length += abs(j - c_start);
                     }
                 }
 
-                length = abs(j - p1);
-                mean_length_left += length;
-            }
+                /** Lado direito da borda */
+                /** Condicao de contorno */
+                if(j == (src.cols-1)){
+                    c_end = src.cols-1;
+                }else{
+                    /** Verifica a primeira derivada */
+                    if((src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) > 0){
+                        k   = j;
+                        max = src.at<uchar>(i,k);
+                        while((max <= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                            k++;
+                            max = src.at<uchar>(i,k);
+                            c_end  = k;
+                        }
+                        length += abs(j - c_end);
+                    }else if((src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) < 0){
+                        k   = j;
+                        min = src.at<uchar>(i,k);
+                        while((min >= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                            k++;
+                            min = src.at<uchar>(i,k);
+                            c_end  = k;
+                        }
+                        length += abs(j - c_end);
+                    }
+                }
 
-        }
+            } /* if(edges.at<uchar>(i,j) > 0) */
+        } /* for em j */
+    } /* for em i*/
+
+    if(edge_counter != 0){
+        blur_index  = length/edge_counter;
+    }else{
+        blur_index  = 0;
     }
 
-    mean_length = (mean_length_left/index + mean_length_right/index)/2;
-    blur_index  = mean_length;
-
-    switch(output_options){
-        case BLUR_INDEX:
-            return blur_index;
-        case BLUR_MIN:
-        if(blur_index < blur_min)
-            blur_min = blur_index;
-            return blur_min;
-        case BLUR_MAX:
-        if(blur_index > blur_max)
-            blur_max = blur_index;
-            return blur_max;
-        default:
-            break;
-    }
-    return 0.0;
+    return blur_index;
 }
 
 double SSIM(cv::Mat& src1,

@@ -75,15 +75,14 @@ void    Loader::showFrame(int i)
     return;
 }
 
-/// @note Este prototipo da funcao eh temporario, ainda muito baguncado
-void    Loader::writeCodebook(string fCodebook,float DMOS)
+void    Loader::writeCodebook(string fCodebook,float DMOS,int frames_in_word,int word_sizeX,int word_sizeY)
 {
     FILE * codebook;
 
     codebook = fopen(fCodebook.c_str(),"a");
     std::cout << "Escrevendo no codebook ... " << fCodebook << std::endl;
 
-    /// Palpites iniciais
+    /// Palpites iniciais para divisao de blocos
     /// ------
     /// Para o caso do banco de dados da LIVE, todos os videos sao 768x432;
     /// 768 = 2⁸ x 3
@@ -91,28 +90,24 @@ void    Loader::writeCodebook(string fCodebook,float DMOS)
     /// Como gcd(768,432) = 48, vamos tentar dividir em (16x9) blocos de 48x48
     /// ------
     /// Os videos tem 217,250 ou 500 frames;
-    /// Tentaremos com 10 frames no comeco;
+    /// Tentaremos com 50 frames para 250 ou 500 e 31 para 217.
 
-    int block_frames = 10;
-    int block_sizeX  = 48;
-    int block_sizeY  = 48;
+    assert((total_frame_nr % frames_in_word) == 0);
+    assert((sizeX % word_sizeX) == 0);
+    assert((sizeY % word_sizeY) == 0);
 
-    assert((total_frame_nr % block_frames) == 0);
-    assert((sizeX % block_sizeX) == 0);
-    assert((sizeY % block_sizeY) == 0);
+    vector<double> buffer_blocking(frames_in_word);
+    vector<double> buffer_blurring(frames_in_word);
 
-    vector<double> buffer_blocking(block_frames);
-    vector<double> buffer_blurring(block_frames);
+    for(int i = 0; i < (total_frame_nr/frames_in_word); ++i){
 
-    for(int i = 0; i < (total_frame_nr/block_frames); ++i){
+        for(int m = 0; m < (sizeX/word_sizeX); ++m){
+            for(int n = 0; n < (sizeY/word_sizeY); ++n){
 
-        for(int m = 0; m < (sizeX/block_sizeX); ++m){
-            for(int n = 0; n < (sizeY/block_sizeY); ++n){
-
-                for(int j = 0; j < block_frames; ++j){
-                    cv::Mat block = (frameY.at((i*block_frames)+j))(cv::Rect(block_sizeX*m,block_sizeY*n,block_sizeX,block_sizeY));
-                    buffer_blocking.push_back(blockingVlachos(block));
-                    buffer_blurring.push_back(blurringWinkler(block));
+                for(int j = 0; j < frames_in_word; ++j){
+                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY));
+                    buffer_blocking.push_back(blockingVlachos(word));
+                    buffer_blurring.push_back(blurringWinkler(word));
                 }
                 fprintf(codebook,"%f;%f;%f;\n",DMOS,mean(buffer_blocking),mean(buffer_blurring));
                 buffer_blocking.clear();
@@ -121,13 +116,7 @@ void    Loader::writeCodebook(string fCodebook,float DMOS)
         }
 
     }
-
     fclose(codebook);
-
-    //fprintf(codebook,"%f\n",blockingVlachos(block));
-    //fprintf(codebook,"%f\n",blurringWinkler(block));
-
-    //fprintf(codebook,"%f\n",blockingVlachos(frameY.at(i)));
 }
 double   Loader::mean(vector<double> v)
 {
