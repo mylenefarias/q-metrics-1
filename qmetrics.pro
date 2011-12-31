@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 TEMPLATE = app
+CONFIG  -= qt
 TARGET   = qmetrics
 
 DEPENDPATH += . inc src

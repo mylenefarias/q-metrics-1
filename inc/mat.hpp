@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include <fftw3.h>
 
+#include <vector>
+
 #define EPSILON 2.2204e-16
 
 float   gauss2d(float x, float y, float s);
@@ -34,6 +36,16 @@ float   gauss(float x, float s);
 float   mgauss(float x, float s);
 float   dgauss(float x, float s);
 
+template <typename T>
+    T mean(std::vector<T> const & v)
+{
+    T s;
+    s = 0;
+    for(unsigned int i = 0; i < v.size(); ++i)
+        s += v.at(i);
+    s /= v.size();
+    return s;
+}
 
 /**
 * @brief Aplica a transforma de Fourier na matriz de entrada

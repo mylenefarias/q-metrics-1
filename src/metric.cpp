@@ -56,8 +56,8 @@ double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshol
     }
 
     unsigned int edge_counter = 0; /// Contador de bordas detectadas
-    int c_start; /// Indice do maximo ou minimo local vindo pela direita da borda
-    int c_end;   /// Indice do maximo ou minimo local vindo pela esquerda da borda
+    int c_start;                   /// Indice do maximo ou minimo local vindo pela direita da borda
+    int c_end;                     /// Indice do maximo ou minimo local vindo pela esquerda da borda
     int k;
 
     uchar  max = 0;
@@ -68,6 +68,9 @@ double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshol
     for(int i = 0; i < src.rows; ++i){
         for(int j = 0; j < src.cols; ++j){
 
+            c_start = -1;
+            c_end   = -1;
+
             if(edges.at<uchar>(i,j) > 0){
                 edge_counter++;
 
@@ -76,6 +79,7 @@ double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshol
                 if(j == 0){
                     c_start = 0;
                 }else{
+                    /** Verifica a primeira derivada */
                     if((src.at<uchar>(i,j-1) - src.at<uchar>(i,j)) > 0){
                         k   = j;
                         max = src.at<uchar>(i,k);
@@ -84,8 +88,7 @@ double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshol
                             max = src.at<uchar>(i,k);
                             c_start  = k;
                         }
-                        length += abs(j - c_start);
-                    }else if((src.at<uchar>(i,j-1) - src.at<uchar>(i,j)) < 0){
+                    }else /* (src.at<uchar>(i,j-1) - src.at<uchar>(i,j)) < 0 */{
                         k   = j;
                         min = src.at<uchar>(i,k);
                         while((min >= src.at<uchar>(i,k-1))&&(k>1)){
@@ -93,7 +96,6 @@ double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshol
                             min = src.at<uchar>(i,k);
                             c_start  = k;
                         }
-                        length += abs(j - c_start);
                     }
                 }
 
@@ -111,8 +113,7 @@ double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshol
                             max = src.at<uchar>(i,k);
                             c_end  = k;
                         }
-                        length += abs(j - c_end);
-                    }else if((src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) < 0){
+                    }else /* (src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) <= 0 */ {
                         k   = j;
                         min = src.at<uchar>(i,k);
                         while((min >= src.at<uchar>(i,k+1))&&(k<src.cols)){
@@ -120,9 +121,11 @@ double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshol
                             min = src.at<uchar>(i,k);
                             c_end  = k;
                         }
-                        length += abs(j - c_end);
                     }
                 }
+
+                assert((c_end - c_start) >= 0);
+                length += (c_end - c_start);
 
             } /* if(edges.at<uchar>(i,j) > 0) */
         } /* for em j */

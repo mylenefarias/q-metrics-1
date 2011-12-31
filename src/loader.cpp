@@ -8,6 +8,15 @@ Loader::Loader(string fN, int sX, int sY, int yuv)
     long length;
     int  yuvbuffersize;
 
+    if     (format == _400)     yuvbuffersize = sizeX*sizeY;
+    else if(format == _420)     yuvbuffersize = 3*sizeX*sizeY/2;
+    else if(format == _422)     yuvbuffersize = 2*sizeX*sizeY;
+    else if(format == _444)     yuvbuffersize = 3*sizeX*sizeY;
+    else{
+        printf("Formato de YUV invalido \n");
+        exit(1);
+    }
+
     file    = fopen(fName.c_str(),"rb");
     if((length = getFileSize(file)) == -1){
         std::cout << "Erro ao ler tamanho do arquivo" << std::endl;
@@ -15,10 +24,6 @@ Loader::Loader(string fN, int sX, int sY, int yuv)
 
     std::cout << "Tamanho do arquivo: " << length << std::endl;
 
-    if     (format == _400)     yuvbuffersize = sizeX*sizeY;
-    else if(format == _420)     yuvbuffersize = 3*sizeX*sizeY/2;
-    else if(format == _422)     yuvbuffersize = 2*sizeX*sizeY;
-    else if(format == _444)     yuvbuffersize = 3*sizeX*sizeY;
 
     total_frame_nr = length/yuvbuffersize;
 
@@ -29,8 +34,9 @@ Loader::Loader(string fN, int sX, int sY, int yuv)
 
     for(int frame_nr=0; frame_nr< total_frame_nr; ++frame_nr){
         fseek(file,yuvbuffersize*frame_nr,SEEK_SET);
-        fread((uchar*)(ybuf+(sizeX*sizeY*frame_nr)), sizeX*sizeY,1,file);
-
+        if(fread((uchar*)(ybuf+(sizeX*sizeY*frame_nr)), sizeX*sizeY,1,file) == 0){
+            printf("Problema ao ler o arquivo .yuv \n");
+        }
         frameY.push_back(cv::Mat(cv::Size(sizeX,sizeY), CV_8UC1, (ybuf+(sizeX*sizeY*frame_nr))));
     }
 
@@ -109,7 +115,7 @@ void    Loader::writeCodebook(string fCodebook,float DMOS,int frames_in_word,int
                     buffer_blocking.push_back(blockingVlachos(word));
                     buffer_blurring.push_back(blurringWinkler(word));
                 }
-                fprintf(codebook,"%f;%f;%f;\n",DMOS,mean(buffer_blocking),mean(buffer_blurring));
+                fprintf(codebook,"%f;%f;%f;\n",DMOS,pool_frame(buffer_blocking),pool_frame(buffer_blurring));
                 buffer_blocking.clear();
                 buffer_blurring.clear();
             }
@@ -118,15 +124,10 @@ void    Loader::writeCodebook(string fCodebook,float DMOS,int frames_in_word,int
     }
     fclose(codebook);
 }
-double   Loader::mean(vector<double> v)
+double   Loader::pool_frame(vector<double> v)
 {
-    double s = 0;
-    for(unsigned int i = 0; i < v.size(); ++i)
-        s += v.at(i);
-    s /= v.size();
-    return s;
+    return mean<double>(v);
 }
-
 
 void   Loader::callDebug() {
 }

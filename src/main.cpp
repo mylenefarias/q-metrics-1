@@ -9,15 +9,15 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    string fN  = argv[1];       /// Nome do arquivo .yuv
-    int  sx    = atoi(argv[2]); /// Numero de colunas
-    int  sy    = atoi(argv[3]); /// Numero de linhas
-    int  yuv   = atoi(argv[4]); /// Ver definicoes em global.h
-    float DMOS = atof(argv[5]); /// DMOS do arquivo .yuv
+    string fN  = argv[1];        /// Nome do arquivo .yuv
+    int  sx    = atoi(argv[2]);  /// Numero de colunas
+    int  sy    = atoi(argv[3]);  /// Numero de linhas
+    int  yuv   = atoi(argv[4]);  /// Ver definicoes em global.h
+    float DMOS = atof(argv[5]);  /// DMOS do arquivo .yuv
     int   fw    = atoi(argv[6]); /// Frames em uma codeword
     int   xw    = atoi(argv[7]); /// Numero de colunas de uma codeword
     int   yw    = atoi(argv[8]); /// Numero de linhas de uma codeword
-    int   video = atoi(argv[9]);  /// 1 para ligar o video
+    int   video = atoi(argv[9]); /// 1 para ligar o video
 
 
     Loader loadedFile(fN,sx,sy,yuv);

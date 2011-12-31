@@ -37,7 +37,6 @@ class Loader
                 void    callMetrics();
                 void    showFrame(int i);
 
-                double mean(vector<double> v);
 
 private:
 
@@ -51,6 +50,7 @@ private:
                 int 	format;         /// Formato do video (444,422,420,400)
                 int     total_frame_nr;	/// Numero total de frames
 
+                double  pool_frame(vector<double> v);
 };
 
 #endif // LOADER_H
