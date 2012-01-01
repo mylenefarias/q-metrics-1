@@ -5,12 +5,12 @@
 CC            = gcc
 CXX           = g++
 DEFINES       = 
-CFLAGS        = -pipe -O2 -I/usr/local/include/opencv -I/usr/local/include -Wall -W $(DEFINES)
-CXXFLAGS      = -pipe -O2 -I/usr/local/include/opencv -I/usr/local/include -Wall -W $(DEFINES)
+CFLAGS        = -pipe -O2 -Wall -W $(DEFINES) `pkg-config --cflags opencv fftw3`
+CXXFLAGS      = -pipe -O2 -Wall -W $(DEFINES) `pkg-config --cflags opencv fftw3`
 INCPATH       = -Iinc
 LINK          = g++
 LFLAGS        = -Wl,-O1
-LIBS          = $(SUBLIBS)   /usr/local/lib/libfftw3.a /usr/lib/libm.a -L/usr/local/lib -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_ml -lopencv_video -lopencv_features2d -lopencv_calib3d -lopencv_objdetect -lopencv_contrib -lopencv_legacy -lopencv_flann 
+LIBS          = $(SUBLIBS)  `pkg-config --libs fftw3 opencv`
 
 ####### Output directory
 
