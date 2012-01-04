@@ -38,11 +38,14 @@ enum    BlurWinklerOptions{
 
 
 double  blockingVlachos(cv::Mat & src);
+
 double  blurringWinkler(cv::Mat & src,
                         BlurWinklerOptions options = BW_EDGE_CANNY,
                         double threshold1 = 10,
                         double threshold2 = 200,
                         int aperture_size = 3);
+
+double  packetLoss(cv::Mat & src);
 
 /**
 * @brief Calcula o SSIM entre duas imagens

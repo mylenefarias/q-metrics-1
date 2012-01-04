@@ -140,6 +140,11 @@ double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshol
     return blur_index;
 }
 
+double packetLoss(cv::Mat &src)
+{
+
+}
+
 double SSIM(cv::Mat& src1,
             cv::Mat& src2,
             const double K1,

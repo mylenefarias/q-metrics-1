@@ -32,11 +32,11 @@ class Loader
                 long    getFileSize(FILE *hFile);
 
                 void    writeCodebook(string fCodebook, float DMOS, int frames_in_word, int word_sizeX, int word_sizeY);
+                double  predictMOS(string fCodebook, int K);
 
                 void    callDebug();
                 void    callMetrics();
                 void    showFrame(int i);
-
 
 private:
 
@@ -51,6 +51,7 @@ private:
                 int     total_frame_nr;	/// Numero total de frames
 
                 double  pool_frame(vector<double> v);
+                int     count_lines(FILE *codebook);
 };
 
 #endif // LOADER_H

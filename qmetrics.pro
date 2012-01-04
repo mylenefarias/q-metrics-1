@@ -17,7 +17,8 @@ HEADERS += inc/mat.hpp  \
            inc/debug.h  \
            inc/global.h \
            inc/loader.h \
-           inc/csf.h
+           inc/csf.h \
+           inc/parser.h
 #          inc/old/old_aux.hpp \
 #          inc/old/old_img.hpp \
 #          inc/old/old_metric.h \
@@ -29,7 +30,8 @@ SOURCES += src/main.cpp   \
            src/metric.cpp \
            src/debug.cpp  \
            src/loader.cpp \
-           src/csf.cpp
+           src/csf.cpp \
+           src/parser.cpp
 #          src/old/old_img.cpp \
 #          src/old/old_metric.cpp \
 #          src/old/old_debug.cpp

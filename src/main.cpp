@@ -1,33 +1,42 @@
 #include "loader.h"
+#include "parser.h"
 
 void PrintHelp(void);
 
 int main(int argc, char *argv[])
 {
-    if(argc < 10){
+    /// @todo Modularizar para a classe Parser
+    if(argc < 1){
         PrintHelp();
         exit(0);
     }
 
-    string fN  = argv[1];        /// Nome do arquivo .yuv
-    int  sx    = atoi(argv[2]);  /// Numero de colunas
-    int  sy    = atoi(argv[3]);  /// Numero de linhas
-    int  yuv   = atoi(argv[4]);  /// Ver definicoes em global.h
-    float DMOS = atof(argv[5]);  /// DMOS do arquivo .yuv
-    int   fw    = atoi(argv[6]); /// Frames em uma codeword
-    int   xw    = atoi(argv[7]); /// Numero de colunas de uma codeword
-    int   yw    = atoi(argv[8]); /// Numero de linhas de uma codeword
-    int   video = atoi(argv[9]); /// 1 para ligar o video
-
+    string mode = argv[1];        /// Modo de execucao
+    string fN   = argv[2];        /// Nome do arquivo .yuv
+    int  sx     = atoi(argv[3]);  /// Numero de colunas
+    int  sy     = atoi(argv[4]);  /// Numero de linhas
+    int  yuv    = atoi(argv[5]);  /// Tipo do arquivo .yuv - Ver definicoes em global.h
 
     Loader loadedFile(fN,sx,sy,yuv);
 
-    loadedFile.writeCodebook("codebook.txt",DMOS,fw,xw,yw);
+    if(mode == "train"){
 
-    int frame_atual = 0;
-    int total_frames = loadedFile.getTotalFrameNr();
+        float DMOS  = atof(argv[6]); /// DMOS do arquivo .yuv
+        int   fw    = atoi(argv[7]); /// Frames em uma codeword
+        int   xw    = atoi(argv[8]); /// Numero de colunas de uma codeword
+        int   yw    = atoi(argv[9]); /// Numero de linhas de uma codeword
 
-    if(video){
+        loadedFile.writeCodebook("codebook.txt",DMOS,fw,xw,yw);
+
+    }else if(mode == "predict"){
+
+        loadedFile.predictMOS("codebook.txt",500);
+
+    }else if(mode == "video"){
+
+        int frame_atual = 0;
+        int total_frames = loadedFile.getTotalFrameNr();
+
         while(true){
             loadedFile.showFrame(frame_atual);
 
@@ -39,6 +48,12 @@ int main(int argc, char *argv[])
             if(((char)c==108) && (frame_atual < (total_frames-1))) /// Tecla 'l'
                 frame_atual++;
         }
+
+
+    }else{
+        printf("Opcao Invalida \n");
+        PrintHelp();
+        exit(0);
     }
 
     return 0;
