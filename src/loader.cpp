@@ -102,51 +102,81 @@ void    Loader::writeCodebook(string fCodebook,float DMOS,int frames_in_word,int
         }
 
     }
+
     fclose(codebook);
 }
 
-double   Loader::predictMOS(string fCodebook,int K){
+double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_sizeX,int word_sizeY){
 
     FILE * codebook;
     codebook = fopen(fCodebook.c_str(),"r");
 
-    int number_samples_vectors  = 1;
+    assert((total_frame_nr % frames_in_word) == 0);
+    assert((sizeX % word_sizeX) == 0);
+    assert((sizeY % word_sizeY) == 0);
+
+    int total_words = (total_frame_nr/frames_in_word)*(sizeX/word_sizeX)*(sizeY/word_sizeY);
+
+    vector<double> buffer_MOS(total_words);
+    vector<double> buffer_blocking(frames_in_word);
+    vector<double> buffer_blurring(frames_in_word);
+
     int number_training_vectors = count_lines(codebook);
 
     int number_features = 2;
     int number_outputs  = 1;
 
-    float * sample_vectors  = new float[number_samples_vectors  * number_features];
+    float * sample_vector  = new float[number_features];
     float * feature_vectors = new float[number_training_vectors * number_features];
     float * output_vectors  = new float[number_training_vectors * number_outputs];
 
-    /// Faz a leitura do arquivo codebook para o algoritmo de k-NN
-    for(int i = 0; i < number_training_vectors; ++i){
+    /// Faz a leitura do arquivo codebook para o algoritmo de K-Nearest Neighbors
+    for(int i = 0,f = 0; i < number_training_vectors; ++i,f+=number_features){
 
         fscanf(codebook,
                "%f;%f;%f;\n",
                &output_vectors[i],
-               &feature_vectors[i], /// blocking
-               &feature_vectors[i + number_training_vectors]); /// blurring
+               &feature_vectors[f],    /// blocking
+               &feature_vectors[f+1]); /// blurring
 
     }
 
-    /// Calcula as features do video aberto
-    /// @todo terminar de calcular as features localmente
-    sample_vectors[0] = blockingVlachos(frameY.at(0));
-    sample_vectors[1] = blurringWinkler(frameY.at(0));
-
-    cv::Mat sampleData(number_samples_vectors,number_features,CV_32FC1,sample_vectors);
     cv::Mat trainData(number_training_vectors,number_features,CV_32FC1,feature_vectors);
     cv::Mat outputData(number_training_vectors,1,CV_32FC1,output_vectors);
-
     cv::KNearest knn(trainData,outputData,cv::Mat(),true,K);
-    float predicted_mos = knn.find_nearest(sampleData,K);
-    printf("Valor predito de MOS usando kNN: %f com k = %d\n",predicted_mos,K);
+
+    cv::Mat sampleData(1,number_features,CV_32FC1,sample_vector);
+    /// Calcula as features do video aberto
+    for(int i = 0; i < (total_frame_nr/frames_in_word); ++i){
+
+        for(int m = 0; m < (sizeX/word_sizeX); ++m){
+            for(int n = 0; n < (sizeY/word_sizeY); ++n){
+
+                for(int j = 0; j < frames_in_word; ++j){
+                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY));
+                    buffer_blocking.push_back(blockingVlachos(word));
+                    buffer_blurring.push_back(blurringWinkler(word));
+                }
+
+                sample_vector[0] = pool_frame(buffer_blocking);
+                sample_vector[1] = pool_frame(buffer_blurring);
+
+                buffer_MOS.push_back(knn.find_nearest(sampleData,K));
+
+                buffer_blocking.clear();
+                buffer_blurring.clear();
+            }
+        }
+
+    }
+
+    float predicted_mos = mean(buffer_MOS);
+
+    printf("Valor predito de MOS usando K-Nearest Neighbors: %f com K = %d\n",predicted_mos,K);
 
     delete [] output_vectors;
     delete [] feature_vectors;
-    delete [] sample_vectors;
+    delete [] sample_vector;
 
     return predicted_mos;
 }

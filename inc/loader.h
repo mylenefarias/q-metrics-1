@@ -32,7 +32,7 @@ class Loader
                 long    getFileSize(FILE *hFile);
 
                 void    writeCodebook(string fCodebook, float DMOS, int frames_in_word, int word_sizeX, int word_sizeY);
-                double  predictMOS(string fCodebook, int K);
+                double  predictMOS(string fCodebook, int K, int frames_in_word, int word_sizeX, int word_sizeY);
 
                 void    callDebug();
                 void    callMetrics();

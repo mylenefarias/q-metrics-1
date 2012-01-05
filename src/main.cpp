@@ -6,7 +6,7 @@ void PrintHelp(void);
 int main(int argc, char *argv[])
 {
     /// @todo Modularizar para a classe Parser
-    if(argc < 1){
+    if(argc < 5){
         PrintHelp();
         exit(0);
     }
@@ -30,7 +30,11 @@ int main(int argc, char *argv[])
 
     }else if(mode == "predict"){
 
-        loadedFile.predictMOS("codebook.txt",500);
+        int   fw    = atoi(argv[6]); /// Frames em uma codeword
+        int   xw    = atoi(argv[7]); /// Numero de colunas de uma codeword
+        int   yw    = atoi(argv[8]); /// Numero de linhas de uma codeword
+
+        loadedFile.predictMOS("codebook.txt",500,fw,xw,yw);
 
     }else if(mode == "video"){
 
@@ -51,7 +55,7 @@ int main(int argc, char *argv[])
 
 
     }else{
-        printf("Opcao Invalida \n");
+        printf("Invalid Option \n");
         PrintHelp();
         exit(0);
     }
@@ -61,8 +65,18 @@ int main(int argc, char *argv[])
 
 void PrintHelp()
 {
-    printf("usage: qmetrics [options] [file] \n"
-           "  -h --help : print this help \n"
-           "  \n"
-           "  \n");
+    printf("usage: qmetrics [mode] [file] [width] [height] [YUV] [mode options] \n"
+           "mode: train,predict,video \n"
+           "\t train: write a codebook  \n"
+           "\t predict: predict a MOS using codebook \n"
+           "\t video: show the video \n"
+           "file: path to the .yuv file \n"
+           "width: width of the video \n"
+           "height: height of the video \n"
+           "YUV: 0,1,2,3 \n"
+           "\t 0 for 4:0:0 \n"
+           "\t 1 for 4:2:0 \n"
+           "\t 2 for 4:2:2 \n"
+           "\t 3 for 4:4:4 \n"
+           "mode options: specific options for the mode \n");
 }

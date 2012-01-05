@@ -1,7 +1,5 @@
 #include "parser.h"
 
-
-
 LoaderMode parseCmdLine(int argc, char *argv[],Loader lFile,CmdLineOpts opts)
 {
     string mode = argv[1];
