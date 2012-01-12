@@ -6,10 +6,10 @@ Loader::Loader(string fN, int sX, int sY, int yuv)
     long length;
     int  yuvbuffersize;
 
-    if     (format == _400)     yuvbuffersize = sizeX*sizeY;
-    else if(format == _420)     yuvbuffersize = 3*sizeX*sizeY/2;
-    else if(format == _422)     yuvbuffersize = 2*sizeX*sizeY;
-    else if(format == _444)     yuvbuffersize = 3*sizeX*sizeY;
+    if     (format == 400)     yuvbuffersize = sizeX*sizeY;
+    else if(format == 420)     yuvbuffersize = 3*sizeX*sizeY/2;
+    else if(format == 422)     yuvbuffersize = 2*sizeX*sizeY;
+    else if(format == 444)     yuvbuffersize = 3*sizeX*sizeY;
     else{
         printf("Formato de YUV invalido \n");
         exit(1);
@@ -181,12 +181,58 @@ double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_s
     return predicted_mos;
 }
 
-
-
 void   Loader::callDebug() {
 }
 
 void   Loader::callMetrics() {
+	double avg_blur[4] = {0,0,0,0},min_blur[4] = {1000,1000,1000,1000},max_blur[4] = {-1,-1,-1,-1};
+	FILE * f_output;
+    	f_output = fopen("TesteBorragem","w");//@todo colocar "fName.c_str()" - ".yuv"
+
+    	fprintf(f_output,"Frame"
+                     	"\t"
+                    	"Winkler"
+			"\t\t"
+			"Winkler2"
+			"\t"
+			"CPBD"
+			"\t\t"
+			"Perceptual"
+                     	"\n");
+
+
+	for(int frame_nr=0; frame_nr< total_frame_nr; ++frame_nr){
+		double blur0 = blurringWinkler(frameY.at(frame_nr), BW_EDGE_CANNY, 10, 200, 3);
+		double blur1 = blurringWinklerV2(frameY.at(frame_nr), BW_EDGE_CANNY, 10, 200, 3);
+		double blur2 = blurringCPBD(frameY.at(frame_nr), BW_EDGE_CANNY, 10, 200, 3);
+		double blur3 = blurringPerceptual(frameY.at(frame_nr));
+
+		fprintf(f_output,"%d\t%f\t%f\t%f\t%f\n",frame_nr,blur0,blur1,blur2,blur3);
+
+		avg_blur[0] += blur0;
+		if( blur0 < min_blur[0])	min_blur[0] = blur0;
+		else if(blur0 > max_blur[0])	max_blur[0] = blur0;
+		avg_blur[1] += blur1;
+		if( blur1 < min_blur[1])	min_blur[1] = blur1;
+		else if(blur1 > max_blur[1])	max_blur[1] = blur1;
+		avg_blur[2] += blur2;
+		if( blur2 < min_blur[2])	min_blur[2] = blur2;
+		else if(blur2 > max_blur[2])	max_blur[2] = blur2;
+		avg_blur[3] += blur3;
+		if( blur3 < min_blur[3])	min_blur[3] = blur3;
+		else if(blur3 > max_blur[3])	max_blur[3] = blur3;
+
+
+	}
+	fprintf(f_output,"\nAvg =\t"
+                    	 "%f\t%f\t%f\t%f"
+                   	 "\nMax =\t"
+                     	 "%f\t%f\t%f\t%f"
+                     	 "\nMin =\t"
+                     	 "%f\t%f\t%f\t%f"
+                     	 "\n",avg_blur[0]/total_frame_nr,avg_blur[1]/total_frame_nr,avg_blur[2]/total_frame_nr,avg_blur[3]/total_frame_nr, max_blur[0], max_blur[1], max_blur[2], max_blur[3], min_blur[0], min_blur[1], min_blur[2], min_blur[3]);
+
+	fclose(f_output);
 }
 
 int    Loader::getTotalFrameNr() const

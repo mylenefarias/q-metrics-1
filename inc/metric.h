@@ -44,6 +44,19 @@ double  blurringWinkler(cv::Mat & src,
                         double threshold1 = 10,
                         double threshold2 = 200,
                         int aperture_size = 3);
+double  blurringWinklerV2(cv::Mat & src,
+                        BlurWinklerOptions options = BW_EDGE_CANNY,
+                        double threshold1 = 10,
+                        double threshold2 = 200,
+                        int aperture_size = 3);
+//(ref.: A No-Reference Image Blur Metric Based on the Cumulative Probability of Blur Detection (CPBD) )
+double  blurringCPBD(cv::Mat & src,
+                        BlurWinklerOptions options = BW_EDGE_CANNY,
+                        double threshold1 = 10,
+                        double threshold2 = 200,
+                        int aperture_size = 3);
+//(ref.: The Blur Effect: Perception and Estimation with a New No-Reference Perceptual Blur Metric)
+double  blurringPerceptual(cv::Mat & src);
 
 double  packetLoss(cv::Mat & src);
 

@@ -41,6 +41,8 @@ int main(int argc, char *argv[])
         int frame_atual = 0;
         int total_frames = loadedFile.getTotalFrameNr();
 
+		loadedFile.callMetrics();
+
         while(true){
             loadedFile.showFrame(frame_atual);
 
