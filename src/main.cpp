@@ -48,12 +48,14 @@ int main(int argc, char *argv[])
 
         loadedFile.printFeatures(s,fw,xw,yw);
 
+    }else if(mode == "metrics"){
+
+        loadedFile.callMetrics();
+
     }else if(mode == "video"){
 
         int frame_atual = 0;
         int total_frames = loadedFile.getTotalFrameNr();
-
-		loadedFile.callMetrics();
 
         while(true){
             loadedFile.showFrame(frame_atual);
@@ -80,10 +82,11 @@ int main(int argc, char *argv[])
 void PrintHelp()
 {
     printf("usage: qmetrics [mode] [file] [width] [height] [YUV] [mode options] \n"
-           "mode: train,predict,video \n"
+           "mode: train,predict,video,metrics \n"
            "\t train: write a codebook  \n"
            "\t predict: predict a MOS using codebook \n"
            "\t video: show the video \n"
+           "\t metrics: call the metrics \n"
            "file: path to the .yuv file \n"
            "width: width of the video \n"
            "height: height of the video \n"

@@ -535,7 +535,7 @@ double contrastHess(const cv::Mat & src,cv::Mat & dest,OutputOptions out)
         return contrast_index;
 
     }else{
-        printf("Opcao invalida de saida na funcao [contrastHess] \n");
+        printf("Opcao invalida de saida [contrastHess] \n");
         exit(1);
     }
 }
