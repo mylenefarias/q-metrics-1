@@ -9,9 +9,9 @@
 #include <opencv/ml.h>
 
 // Esses cabecalhos sao necessarios para a leitura do tamanho
-// do arquivo a partir do file descriptor:
-#include <sys/types.h>
-#include <sys/stat.h>
+// do arquivo a partir do file descriptor: (POSIX)
+// #include <sys/types.h>
+// #include <sys/stat.h>
 
 #include "global.h"
 #include "img.hpp"
@@ -32,7 +32,9 @@ class Loader
                 long    getFileSize(FILE *hFile);
 
                 void    writeCodebook(string fCodebook, float DMOS, int frames_in_word, int word_sizeX, int word_sizeY);
+                void    printFeatures(string fFeatures, int frames_in_word, int word_sizeX, int word_sizeY);
                 double  predictMOS(string fCodebook, int K, int frames_in_word, int word_sizeX, int word_sizeY);
+                void    compareLIVE(double predicted_value);
 
                 void    callDebug();
                 void    callMetrics();

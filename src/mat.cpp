@@ -22,7 +22,6 @@
 
 #include <mat.hpp>
 
-
 float   gauss2d(float x, float y, float s){
     float xx;
     if(s == 0) return 0.0;
@@ -44,55 +43,3 @@ float   mgauss(float x, float s){
 float   dgauss(float x,float s){
     return -x/(s*s)*gauss(x,s);
 }
-
-/* Normas bidimensionais */
-float   L2(float x,float y){
-    return (float) sqrt ((double) (x*x + y*y));
-}
-float   L1(float x,float y){
-    return (x+y) ;
-}
-float   Loo(float x,float y){
-    float a,b,r;
-    (x < 0) ? a = -x : a = x;
-    (y < 0) ? b = -y : b = y;
-    (a > b) ? r = a : r = b;
-    return r;
-}
-
-RStatistics::RStatistics(){
-    m_n = 0;
-}
-void RStatistics::Clear(){
-    m_n = 0;
-}
-void RStatistics::Push(double x){
-    m_n++;
-    // See Knuth TAOCP vol 2, 3rd edition, page 232
-    if (m_n == 1)
-    {
-        m_oldM = m_newM = x;
-        m_oldS = 0.0;
-    }
-    else
-    {
-        m_newM = m_oldM + (x - m_oldM)/m_n;
-        m_newS = m_oldS + (x - m_oldM)*(x - m_newM);
-        // set up for next iteration
-        m_oldM = m_newM;
-        m_oldS = m_newS;
-    }
-}
-int  RStatistics::NumDataValues() const{
-    return m_n;
-}
-double RStatistics::Mean() const{
-    return (m_n > 0) ? m_newM : 0.0;
-}
-double RStatistics::Variance() const{
-    return ( (m_n > 1) ? m_newS/(m_n - 1) : 0.0 );
-}
-double RStatistics::StandardDeviation() const{
-    return sqrt( Variance() );
-}
-

@@ -22,7 +22,6 @@ Loader::Loader(string fN, int sX, int sY, int yuv)
 
     std::cout << "Tamanho do arquivo: " << length << std::endl;
 
-
     total_frame_nr = length/yuvbuffersize;
 
     std::cout << "Numero total de frames: " << total_frame_nr << std::endl;
@@ -84,6 +83,8 @@ void    Loader::writeCodebook(string fCodebook,float DMOS,int frames_in_word,int
 
     vector<double> buffer_blocking(frames_in_word);
     vector<double> buffer_blurring(frames_in_word);
+    vector<double> buffer_contrast(frames_in_word);
+    vector<double> buffer_texture(frames_in_word);
 
     for(int i = 0; i < (total_frame_nr/frames_in_word); ++i){
 
@@ -91,13 +92,22 @@ void    Loader::writeCodebook(string fCodebook,float DMOS,int frames_in_word,int
             for(int n = 0; n < (sizeY/word_sizeY); ++n){
 
                 for(int j = 0; j < frames_in_word; ++j){
-                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY));
+                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY)).clone();
+                    cv::Mat temp(word.rows,word.cols,CV_64FC1);
+
                     buffer_blocking.push_back(blockingVlachos(word));
                     buffer_blurring.push_back(blurringWinkler(word));
+                    buffer_contrast.push_back(contrastHess(word,temp));
+                    buffer_texture.push_back(textureStd(word));
                 }
-                fprintf(codebook,"%f;%f;%f;\n",DMOS,pool_frame(buffer_blocking),pool_frame(buffer_blurring));
+                fprintf(codebook,"%f;%f;%f;%lf;%f\n",DMOS,pool_frame(buffer_blocking),
+                                                          pool_frame(buffer_blurring),
+                                                          pool_frame(buffer_contrast),
+                                                          pool_frame(buffer_texture));
                 buffer_blocking.clear();
                 buffer_blurring.clear();
+                buffer_contrast.clear();
+                buffer_texture.clear();
             }
         }
 
@@ -120,10 +130,12 @@ double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_s
     vector<double> buffer_MOS(total_words);
     vector<double> buffer_blocking(frames_in_word);
     vector<double> buffer_blurring(frames_in_word);
+    vector<double> buffer_contrast(frames_in_word);
+    vector<double> buffer_texture(frames_in_word);
 
     int number_training_vectors = count_lines(codebook);
 
-    int number_features = 2;
+    int number_features = 4;
     int number_outputs  = 1;
 
     float * sample_vector  = new float[number_features];
@@ -134,11 +146,12 @@ double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_s
     for(int i = 0,f = 0; i < number_training_vectors; ++i,f+=number_features){
 
         fscanf(codebook,
-               "%f;%f;%f;\n",
+               "%f;%f;%f;%f;%f\n",
                &output_vectors[i],
                &feature_vectors[f],    /// blocking
-               &feature_vectors[f+1]); /// blurring
-
+               &feature_vectors[f+1],  /// blurring
+               &feature_vectors[f+2],  /// contrast
+               &feature_vectors[f+3]); /// texture
     }
 
     cv::Mat trainData(number_training_vectors,number_features,CV_32FC1,feature_vectors);
@@ -153,18 +166,26 @@ double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_s
             for(int n = 0; n < (sizeY/word_sizeY); ++n){
 
                 for(int j = 0; j < frames_in_word; ++j){
-                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY));
+                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY)).clone();
+                    cv::Mat temp(word.rows,word.cols,CV_64FC1);
+
                     buffer_blocking.push_back(blockingVlachos(word));
                     buffer_blurring.push_back(blurringWinkler(word));
+                    buffer_contrast.push_back(contrastHess(word,temp));
+                    buffer_texture.push_back(textureStd(word));
                 }
 
                 sample_vector[0] = pool_frame(buffer_blocking);
                 sample_vector[1] = pool_frame(buffer_blurring);
+                sample_vector[2] = pool_frame(buffer_contrast);
+                sample_vector[3] = pool_frame(buffer_texture);
 
                 buffer_MOS.push_back(knn.find_nearest(sampleData,K));
 
                 buffer_blocking.clear();
                 buffer_blurring.clear();
+                buffer_contrast.clear();
+                buffer_texture.clear();
             }
         }
 
@@ -177,17 +198,93 @@ double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_s
     delete [] output_vectors;
     delete [] feature_vectors;
     delete [] sample_vector;
+    fclose(codebook);
 
     return predicted_mos;
 }
 
-void   Loader::callDebug() {
+/// @todo deixar mais robusta a leitura do .txt da LIVE a partir desta funcao
+void   Loader::compareLIVE(double predicted_value)
+{
+    FILE * live_file = fopen("live_videos_MOS.txt","r");
+    FILE * results = fopen("resultados.txt","a");
+
+    char * video_name;
+    video_name = (char *) malloc(20 * sizeof(char));
+    float DMOS = 0;
+    float var  = 0;
+
+    while(true)
+    {
+        if(fscanf(live_file,"%s ,%f,%f\n",video_name,&DMOS,&var) == EOF){
+            break;
+        }else{
+            if(strcmp(video_name,fName.c_str()) == 0)
+            {
+                break;
+            }
+        }
+
+    }
+
+    fprintf(results,"%s,%f,%f,%f\n",fName.c_str(),predicted_value,DMOS,var);
+
+    free(video_name);
+    fclose(results);
+    fclose(live_file);
+
+}
+
+void   Loader::printFeatures(string fFeatures,int frames_in_word,int word_sizeX,int word_sizeY)
+{
+    FILE * features;
+
+    features = fopen(fFeatures.c_str(),"a");
+    std::cout << "Escrevendo as features no arquivo " << fFeatures << std::endl;
+
+    assert((total_frame_nr % frames_in_word) == 0);
+    assert((sizeX % word_sizeX) == 0);
+    assert((sizeY % word_sizeY) == 0);
+
+    vector<double> buffer_blocking(frames_in_word);
+    vector<double> buffer_blurring(frames_in_word);
+    vector<double> buffer_contrast(frames_in_word);
+    vector<double> buffer_texture(frames_in_word);
+
+    for(int i = 0; i < (total_frame_nr/frames_in_word); ++i){
+
+        for(int m = 0; m < (sizeX/word_sizeX); ++m){
+            for(int n = 0; n < (sizeY/word_sizeY); ++n){
+
+                for(int j = 0; j < frames_in_word; ++j){
+                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY)).clone();
+                    cv::Mat temp(word.rows,word.cols,CV_64FC1);
+
+                    buffer_blocking.push_back(blockingVlachos(word));
+                    buffer_blurring.push_back(blurringWinkler(word));
+                    buffer_contrast.push_back(contrastHess(word,temp));
+                    buffer_texture.push_back(textureStd(word));
+                }
+                fprintf(features,"%f;%f;%lf;%f\n",pool_frame(buffer_blocking),
+                                                  pool_frame(buffer_blurring),
+                                                  pool_frame(buffer_contrast),
+                                                  pool_frame(buffer_texture));
+                buffer_blocking.clear();
+                buffer_blurring.clear();
+                buffer_contrast.clear();
+                buffer_texture.clear();
+            }
+        }
+
+    }
+
+    fclose(features);
 }
 
 void   Loader::callMetrics() {
 	double avg_blur[4] = {0,0,0,0},min_blur[4] = {1000,1000,1000,1000},max_blur[4] = {-1,-1,-1,-1};
 	FILE * f_output;
-    	f_output = fopen("TesteBorragem","w");//@todo colocar "fName.c_str()" - ".yuv"
+        f_output = fopen("TesteBorragem","w");/// @todo colocar "fName.c_str()" - ".yuv"
 
     	fprintf(f_output,"Frame"
                      	"\t"
@@ -252,7 +349,7 @@ int  Loader::count_lines(FILE * codebook)
 {
     int lines = 0;
     while (EOF != (fscanf(codebook,"%*[^\n]"), fscanf(codebook,"%*c")))
-      ++lines;
+        ++lines;
     rewind(codebook);
     return lines;
 }

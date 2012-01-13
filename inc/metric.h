@@ -30,6 +30,11 @@
 #include "mat.hpp"
 #include "img.hpp"
 
+enum    OutputOptions{
+    OUT_AVERAGE,
+    OUT_MEDIAN
+};
+
 enum    BlurWinklerOptions{
     BW_EDGE_CANNY,
     BW_EDGE_SOBEL,
@@ -37,28 +42,35 @@ enum    BlurWinklerOptions{
 };
 
 
-double  blockingVlachos(cv::Mat & src);
+double  blockingVlachos(const cv::Mat &src);
+double  blockingWang(const cv::Mat & src);
 
-double  blurringWinkler(cv::Mat & src,
+double  blurringWinkler(const cv::Mat &src,
                         BlurWinklerOptions options = BW_EDGE_CANNY,
                         double threshold1 = 10,
                         double threshold2 = 200,
                         int aperture_size = 3);
-double  blurringWinklerV2(cv::Mat & src,
+double  blurringWinklerV2(const cv::Mat &src,
                         BlurWinklerOptions options = BW_EDGE_CANNY,
                         double threshold1 = 10,
                         double threshold2 = 200,
                         int aperture_size = 3);
-//(ref.: A No-Reference Image Blur Metric Based on the Cumulative Probability of Blur Detection (CPBD) )
-double  blurringCPBD(cv::Mat & src,
+/// (ref.: A No-Reference Image Blur Metric Based on the Cumulative Probability of Blur Detection (CPBD) )
+double  blurringCPBD(const cv::Mat & src,
                         BlurWinklerOptions options = BW_EDGE_CANNY,
                         double threshold1 = 10,
                         double threshold2 = 200,
                         int aperture_size = 3);
-//(ref.: The Blur Effect: Perception and Estimation with a New No-Reference Perceptual Blur Metric)
-double  blurringPerceptual(cv::Mat & src);
+/// (ref.: The Blur Effect: Perception and Estimation with a New No-Reference Perceptual Blur Metric)
+double  blurringPerceptual(const cv::Mat & src);
 
-double  packetLoss(cv::Mat & src);
+double  packetLoss(const cv::Mat &src);
+
+double contrastMean(const cv::Mat &src);
+double contrastMichelson(const cv::Mat & src);
+double contrastHess(const cv::Mat & src,cv::Mat & dest,OutputOptions out = OUT_AVERAGE);
+
+double textureStd(const cv::Mat &src);
 
 /**
 * @brief Calcula o SSIM entre duas imagens
@@ -67,8 +79,8 @@ double  packetLoss(cv::Mat & src);
 *
 * @return SSIM entre src1 e src2
 */
-double SSIM(cv::Mat& src1,
-            cv::Mat& src2,
+double SSIM(const cv::Mat &src1,
+            const cv::Mat &src2,
             const double K1 = 0.01,
             const double K2 = 0.03,
             const int L     = 255,

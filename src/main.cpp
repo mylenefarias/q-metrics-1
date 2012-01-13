@@ -30,11 +30,23 @@ int main(int argc, char *argv[])
 
     }else if(mode == "predict"){
 
+        int   K     = atoi(argv[6]); /// Parametro K do K-NN
+        int   fw    = atoi(argv[7]); /// Frames em uma codeword
+        int   xw    = atoi(argv[8]); /// Numero de colunas de uma codeword
+        int   yw    = atoi(argv[9]); /// Numero de linhas de uma codeword
+
+        float predicted_MOS;
+        predicted_MOS = loadedFile.predictMOS("codebook.txt",K,fw,xw,yw);
+        loadedFile.compareLIVE(predicted_MOS);
+
+    }else if(mode == "features"){
+
         int   fw    = atoi(argv[6]); /// Frames em uma codeword
         int   xw    = atoi(argv[7]); /// Numero de colunas de uma codeword
         int   yw    = atoi(argv[8]); /// Numero de linhas de uma codeword
+        string s(argv[9]);
 
-        loadedFile.predictMOS("codebook.txt",500,fw,xw,yw);
+        loadedFile.printFeatures(s,fw,xw,yw);
 
     }else if(mode == "video"){
 

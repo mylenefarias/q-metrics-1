@@ -48,6 +48,9 @@ void downsample(const cv::Mat & src,
                 const int ratioRow = 8,
                 const int ratioCol = 8);
 
+void FFT(const cv::Mat & src,cv::Mat & dest);
+void IFFT(const cv::Mat & src,cv::Mat & dest);
+
 void windowHamming(const cv::Mat & src, cv::Mat &dest);
 
 
@@ -55,24 +58,24 @@ void windowHamming(const cv::Mat & src, cv::Mat &dest);
 * @brief Retorna em dest a convolucao com o filtro de textura de Laws no sentido horizontal
 *
 * @param src   Matriz de origem
-* @param dest  Matriz de destino (pode ser utilizado in-place)
-* @param r     Amortecimento do filtro (?)
+* @param dest  Matriz de destino
+* @param r     Amortecimento do filtro
 */
-void filterLawsH(cv::Mat & src,cv::Mat & dest,float r);
+void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r=48.0);
 
 /**
 * @brief Retorna em dest a convolucao com o filtro de textura de Laws no sentido vertical
 *
 * @param src   Matriz de origem
-* @param dest  Matriz de destino (pode ser utilizado in-place)
-* @param r     Amortecimento do filtro (?)
+* @param dest  Matriz de destino
+* @param r     Amortecimento do filtro
 */
-void filterLawsV(cv::Mat & src,cv::Mat & dest,float r);
+void filterLawsV(const cv::Mat &src,cv::Mat & dest,float r=48.0);
 
-void filterHantaoH(cv::Mat & src,cv::Mat & dest);
-void filterHantaoV(cv::Mat & src,cv::Mat & dest);
-void analysisTexture(cv::Mat & src,cv::Mat & dest);
-void analysisContrast(cv::Mat & src,cv::Mat & dest);
+void filterHantaoH(const cv::Mat &src,cv::Mat & dest);
+void filterHantaoV(const cv::Mat &src,cv::Mat & dest);
+void analysisTexture(const cv::Mat & src,cv::Mat & dest);
+void analysisContrast(const cv::Mat &src,cv::Mat & dest);
 
 
 #endif // IMG_HPP

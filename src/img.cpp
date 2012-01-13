@@ -35,6 +35,70 @@ void downsample(const cv::Mat & src,
     return ;
 }
 
+void FFT(const cv::Mat & src,cv::Mat & dest)
+{
+    assert((src.channels() == 1) && (dest.channels() == 2));
+
+    int i,j;
+
+    int height = src.rows;
+    int width  = src.cols;
+
+    fftw_complex * fft_src = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * height * width);
+    fftw_plan p = fftw_plan_dft_2d(height,width,fft_src,fft_src,FFTW_FORWARD,FFTW_ESTIMATE);
+
+    for(i = 0; i < height; ++i){
+        for(j = 0; j < width; ++j){
+            fft_src[j + i*width][0] = src.at<double>(i,j);
+            fft_src[j + i*width][1] = 0.0;
+        }
+    }
+
+    fftw_execute(p);
+
+    for(i = 0; i < height; ++i){
+        for(j = 0; j < width; ++j){
+            dest.at<cv::Vec2d>(i,j)[0] = fft_src[j + i*width][0];
+            dest.at<cv::Vec2d>(i,j)[1] = fft_src[j + i*width][1];
+        }
+    }
+
+    fftw_destroy_plan(p);
+    fftw_free(fft_src);
+}
+
+
+void IFFT(const cv::Mat & src,cv::Mat & dest)
+{
+    assert((src.channels() == 2) && (dest.channels() == 1));
+
+    int i,j;
+
+    int height = src.rows;
+    int width  = src.cols;
+
+    fftw_complex * ifft_src = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * height * width);
+    fftw_plan p = fftw_plan_dft_2d(height,width,ifft_src,ifft_src,FFTW_BACKWARD,FFTW_ESTIMATE);
+
+    for(i = 0; i < height; ++i){
+        for(j = 0; j < width; ++j){
+            ifft_src[j + i*width][0] = src.at<cv::Vec2f>(i,j)[0];
+            ifft_src[j + i*width][1] = src.at<cv::Vec2f>(i,j)[1];
+        }
+    }
+
+    fftw_execute(p);
+
+    for(i = 0; i < height; ++i){
+        for(j = 0; j < width; ++j){
+            dest.at<float>(i,j) = ifft_src[j + i*width][0];
+        }
+    }
+
+    fftw_destroy_plan(p);
+    fftw_free(ifft_src);
+}
+
 double maxCorr2D(const cv::Mat & src1,const cv::Mat & src2)
 {
     int i,j,k;
@@ -97,26 +161,32 @@ double maxCorr2D(const cv::Mat & src1,const cv::Mat & src2)
 
 void conv2D(const cv::Mat &img, cv::Mat& dest, const cv::Mat& kernel, ConvolutionType ctype, int btype) {
 
+  //cv::Mat source(img.rows,img.cols,img.type());
   cv::Mat source = img;
+
+  /// Alteracoes para o resultado ficar igual a funcao conv2 do MATLAB
   cv::Mat flip_kernel(kernel.rows,kernel.cols,kernel.type());
   cv::flip(kernel,flip_kernel,-1);
+  cv::Point anchor(kernel.cols - kernel.cols/2 - 1, kernel.rows - kernel.rows/2 - 1);
 
-  if(CONVOLUTION_FULL == ctype) {
+  if(ctype == CONVOLUTION_FULL) {
     source = cv::Mat();
     const int additionalRows = kernel.rows-1, additionalCols = kernel.cols-1;
     cv::copyMakeBorder(img, source, (additionalRows+1)/2, additionalRows/2, (additionalCols+1)/2, additionalCols/2, cv::BORDER_CONSTANT, cv::Scalar(0));
+  }else if(ctype == CONVOLUTION_VALID) {
+    source = img.clone();
+    dest = dest.colRange((kernel.cols-1)/2, dest.cols - kernel.cols/2)
+               .rowRange((kernel.rows-1)/2, dest.rows - kernel.rows/2);
+  }else{
+    printf("Tipo de convolucao invalida [conv2D] \n");
+    exit(1);
   }
 
-  cv::Point anchor(kernel.cols - kernel.cols/2 - 1, kernel.rows - kernel.rows/2 - 1);
   //int borderMode = cv::BORDER_CONSTANT;
   int borderMode = btype;
 
   cv::filter2D(source, dest, img.depth(), flip_kernel, anchor, 0, borderMode);
 
-  if(CONVOLUTION_VALID == ctype) {
-    dest = dest.colRange((kernel.cols-1)/2, dest.cols - kernel.cols/2)
-               .rowRange((kernel.rows-1)/2, dest.rows - kernel.rows/2);
-  }
 }
 
 void windowHamming(const cv::Mat & src,cv::Mat & dest)
@@ -132,7 +202,7 @@ void windowHamming(const cv::Mat & src,cv::Mat & dest)
     }
 }
 
-void filterLawsH(cv::Mat & src,cv::Mat & dest,float r=48.0)
+void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r)
 {
     conv2D(src,dest,(cv::Mat_<float>(5,5) <<
                     1/r,2/r ,0,-2/r ,-1/r,
@@ -144,7 +214,7 @@ void filterLawsH(cv::Mat & src,cv::Mat & dest,float r=48.0)
 }
 
 
-void filterLawsV(cv::Mat & src,cv::Mat & dest,float r=48.0)
+void filterLawsV(const cv::Mat & src,cv::Mat & dest,float r)
 {
     conv2D(src,dest,(cv::Mat_<float>(5,5) <<
                     1/r, 4/r,  6/r, 4/r, 1/r,
@@ -155,7 +225,7 @@ void filterLawsV(cv::Mat & src,cv::Mat & dest,float r=48.0)
     return ;
 }
 
-void filterHantaoH(cv::Mat & src,cv::Mat & dest)
+void filterHantaoH(const cv::Mat & src,cv::Mat & dest)
 {
     conv2D(src,dest,(cv::Mat_<float>(5,5) <<
                     1,1,0,1,1,
@@ -166,7 +236,7 @@ void filterHantaoH(cv::Mat & src,cv::Mat & dest)
     return ;
 }
 
-void filterHantaoV(cv::Mat & src,cv::Mat & dest)
+void filterHantaoV(const cv::Mat & src,cv::Mat & dest)
 {
     conv2D(src,dest,(cv::Mat_<float>(5,5) <<
                     1,1,1,1,1,
@@ -178,7 +248,7 @@ void filterHantaoV(cv::Mat & src,cv::Mat & dest)
 }
 
 /// Não é desejado utilizar essa funcao in-place - adequar um const no src
-void analysisTexture(cv::Mat & src,cv::Mat & dest)
+void analysisTexture(const cv::Mat & src,cv::Mat & dest)
 {
     cv::Mat t1(src.rows,src.cols,src.type());
     cv::Mat t2(src.rows,src.cols,src.type());
@@ -202,7 +272,7 @@ void analysisTexture(cv::Mat & src,cv::Mat & dest)
 
 
 /// Não é desejado utilizar essa funcao in-place - adequar um const no src
-void analysisContrast(cv::Mat & src,cv::Mat & dest)
+void analysisContrast(const cv::Mat & src,cv::Mat & dest)
 {
     cv::Scalar mean;
     cv::Scalar std;

@@ -1,6 +1,48 @@
 #include "metric.h"
 
-double   blockingVlachos(cv::Mat & src)
+/// https://ece.uwaterloo.ca/~z70wang/research/nr_jpeg_quality/jpeg_quality_score.m
+double   blockingWang(const cv::Mat & src)
+{
+    double block_metric;
+    /// Diferenca do sinal na horizontal
+    cv::Mat d_h1 = src(cv::Rect(1,0,src.cols-1,src.rows)).clone();
+    cv::Mat d_h2 = src(cv::Rect(0,0,src.cols-1,src.rows)).clone();
+
+    cv::Mat d_h(src.rows,src.cols-1,CV_8SC1);
+    d_h = d_h1 - d_h2;
+
+    /// Blocagem estimada horizontalmente
+    double B_h = 0;
+
+    for(int i = 0; i < src.rows; ++i){
+        for(int j = 0; j < (8*floor(src.cols/8)-1); ++j){
+            B_h += (double) abs(d_h.at<int>(i,8*(j+1)));
+        }
+    }
+    B_h = B_h/(src.rows * (floor(src.cols/8)-1));
+
+    /// Diferenca do sinal na vertical
+    cv::Mat d_v1 = src(cv::Rect(0,1,src.cols,src.rows-1)).clone();
+    cv::Mat d_v2 = src(cv::Rect(0,0,src.cols,src.rows-1)).clone();
+
+    cv::Mat d_v(src.rows-1,src.cols,CV_8SC1);
+    d_v = d_v1 - d_v2;
+
+    /// Blocagem estimada verticalmente
+    double B_v = 0;
+
+    for(int i = 0; i < (8*floor(src.rows/8)-1); ++i){
+        for(int j = 0; j < src.cols; ++j){
+            B_h += (double) abs(d_h.at<int>(8*(i+1),j));
+        }
+    }
+    B_h = B_h/(src.cols * (floor(src.rows/8)-1));
+
+    block_metric = (B_h+B_v)/2;
+    return block_metric;
+}
+
+double   blockingVlachos(const cv::Mat & src)
 {
     double block_metric;
 
@@ -41,7 +83,7 @@ double   blockingVlachos(cv::Mat & src)
     return block_metric;
 }
 
-double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshold1,double threshold2,int aperture_size)
+double  blurringWinkler(const cv::Mat & src,BlurWinklerOptions options,double threshold1,double threshold2,int aperture_size)
 {
     double blur_index = 0;
 
@@ -140,9 +182,10 @@ double  blurringWinkler(cv::Mat & src,BlurWinklerOptions options,double threshol
     return blur_index;
 }
 
-double  blurringWinklerV2(cv::Mat & src,BlurWinklerOptions options,double threshold1,double threshold2,int aperture_size)
-{	/*O frame eh borrado e tratado antes de detectar as bordas*/
-        double blur_index = 0;
+/** O frame eh borrado e tratado antes de detectar as bordas*/
+double  blurringWinklerV2(const cv::Mat & src,BlurWinklerOptions options,double threshold1,double threshold2,int aperture_size)
+{
+    double blur_index = 0;
 
     cv::Mat edges(src.rows,src.cols,CV_8UC1);
     cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT,cv::Size(3,3));
@@ -249,7 +292,7 @@ double  blurringWinklerV2(cv::Mat & src,BlurWinklerOptions options,double thresh
     return blur_index;
 }
 
-double  blurringCPBD(cv::Mat & src,BlurWinklerOptions options,double threshold1,double threshold2,int aperture_size)
+double  blurringCPBD(const cv::Mat &src,BlurWinklerOptions options,double threshold1,double threshold2,int aperture_size)
 {
     double blur_index = 0;
 
@@ -389,7 +432,7 @@ double  blurringCPBD(cv::Mat & src,BlurWinklerOptions options,double threshold1,
 	return blur_index;
 }
 
-double  blurringPerceptual(cv::Mat & src)
+double  blurringPerceptual(const cv::Mat &src)
 {
     double blur_index = 0;
 
@@ -426,13 +469,89 @@ double  blurringPerceptual(cv::Mat & src)
 	return blur_index;
 }
 
-double packetLoss(cv::Mat &src)
+double packetLoss(const cv::Mat &src)
 {
-return 0.0;
+    return 0.0;
 }
 
-double SSIM(cv::Mat& src1,
-            cv::Mat& src2,
+
+double contrastMean(const cv::Mat &src)
+{
+    cv::Scalar contrast_index;
+    contrast_index = cv::mean(src);
+
+    return contrast_index[0];
+}
+
+double contrastMichelson(const cv::Mat & src)
+{
+    double contrast_index;
+    double min_luminance;
+    double max_luminance;
+
+    cv::minMaxLoc(src,&min_luminance,&max_luminance);
+    if((min_luminance != 0) || (max_luminance != 0))
+        contrast_index = (max_luminance - min_luminance)/(max_luminance + min_luminance);
+    else
+        contrast_index = 0.0;
+
+    return contrast_index;
+}
+
+double contrastHess(const cv::Mat & src,cv::Mat & dest,OutputOptions out)
+{
+    double contrast_index = 0.0;
+
+    cv::Mat src_w(src.rows,src.cols,CV_64FC1);
+    windowHamming(src,src_w);
+
+    cv::Mat fft_src(src.rows,src.cols,CV_64FC2);
+    FFT(src_w,fft_src);
+
+    double halfDC = sqrt(pow(fft_src.at<cv::Vec2d>(0,0)[0],2) + pow(fft_src.at<cv::Vec2d>(0,0)[1],2))/2;
+
+    for(int i = 0; i < src.rows; ++i){
+        for(int j = 0; j < src.cols; ++j){
+            dest.at<double>(i,j) =  pow(fft_src.at<cv::Vec2d>(i,j)[0],2);
+            dest.at<double>(i,j) += pow(fft_src.at<cv::Vec2d>(i,j)[1],2);
+            dest.at<double>(i,j) =  sqrt(dest.at<double>(i,j));
+            dest.at<double>(i,j) /= halfDC;
+        }
+    }
+
+    if(out == OUT_AVERAGE){
+        cv::Scalar mean;
+        mean = cv::mean(dest);
+
+        contrast_index = mean[0];
+        return contrast_index;
+
+    }else if(out == OUT_MEDIAN){
+        cv::GaussianBlur(dest,dest,cv::Size(3,3),3.0);
+        cv::Scalar mean;
+        cv::mean(dest);
+
+        contrast_index = mean[0];
+        return contrast_index;
+
+    }else{
+        printf("Opcao invalida de saida na funcao [contrastHess] \n");
+        exit(1);
+    }
+}
+
+double textureStd(const cv::Mat & src)
+{
+    cv::Scalar texture_index;
+    cv::Scalar temp;
+
+    cv::meanStdDev(src,temp,texture_index);
+
+    return texture_index[0];
+}
+
+double SSIM(const cv::Mat& src1,
+            const cv::Mat& src2,
             const double K1,
             const double K2,
             const int L,

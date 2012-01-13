@@ -47,103 +47,6 @@ template <typename T>
     return s;
 }
 
-/**
-* @brief Aplica a transforma de Fourier na matriz de entrada
-*
-* @tparam T Tipo da matriz de entrada
-* @param in Matriz de entrada
-* @param out Transformada da matriz de entrada
-* @param sx Tamanho x da matriz
-* @param sy Tamanho y da matriz
-*/
-template <typename T>
-        void   FFT(T ** in, fftw_complex * out,int sx,int sy)
-{
-    int i,j;
-    fftw_complex * FFT_in;
-    fftw_plan p;
-
-    FFT_in  = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * sx * sy);
-
-    for(i = 0; i < sx; ++i)
-        for(j = 0; j < sy; ++j)
-            FFT_in[i*sy + j][0] = in[i][j],
-            FFT_in[i*sy + j][1] = 0;
-
-    p = fftw_plan_dft_2d(sx,sy,FFT_in,out,FFTW_FORWARD,FFTW_ESTIMATE);
-    fftw_execute(p);
-    fftw_destroy_plan(p);
-    fftw_free(FFT_in);
-}
-
-/**
-* @brief Aplica a transformada inversa de Fourier na matriz de entrada
-*
-* @tparam T Tipo da matriz de saida
-* @param in Matriz de entrada
-* @param out Matriz de saida
-* @param sx Tamanho x da matriz
-* @param sy Tamanho y da matriz
-*/
-template <typename T>
-        void   IFFT(fftw_complex * in, T ** out,int sx,int sy)
-{
-    int i,j;
-    fftw_complex * FFT_out;
-    fftw_plan p;
-
-    FFT_out  = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * sx * sy);
-
-    p = fftw_plan_dft_2d(sx,sy,in,FFT_out,FFTW_BACKWARD,FFTW_ESTIMATE);
-    fftw_execute(p);
-
-    for(i = 0; i < sx; ++i)
-        for(j = 0; j < sy; ++j)
-            out[i][j] = FFT_out[i*sy + j][0];
-
-
-    fftw_destroy_plan(p);
-    fftw_free(FFT_out);
-}
-
-/** @todo: reescrever f. abaixo para manter consistencia */
-/**
-* @brief Classe para calcular o 1o e 2o momento (http://www.johndcook.com/standard_deviation.html)
-*/
-class RStatistics{
-    public:
-        RStatistics();
-
-        void Clear();
-/**
-* @brief Coloca um valor dentro da pilha
-* @param x valor x a ser colocado
-*/
-        void Push(double x);
-
-/**
-* @brief Retorna o numero de valores na pilha
-*/
-        int NumDataValues() const;
-/**
-* @brief Retorna a media aritmetica dos valores na pilha
-*/
-        double Mean() const;
-/**
-* @brief Retorna a variancia dos valores na pilha
-*/
-        double Variance() const;
-/**
-* @brief Retorna o desvio padrao
-*/
-        double StandardDeviation() const;
-
-    private:
-        int m_n;
-        double m_oldM, m_newM, m_oldS, m_newS;
-};
-
-
 
 /** @todo: Transportar essa funcao para img.hpp/img.cpp */
 /* Fez-se o benchmark entre os dois algoritmos para o filtro de mediana 1d:
@@ -285,13 +188,5 @@ template <typename T>
     /* Clean up */
     free(w);
 }
-
-float   L2(float x,float y);
-float   L1(float x,float y);
-float   Loo(float x,float y);
-
-
-
-
 
 #endif // MAT_HPP
