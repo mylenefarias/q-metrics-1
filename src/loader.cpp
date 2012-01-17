@@ -92,7 +92,7 @@ void    Loader::writeCodebook(string fCodebook,float DMOS,int frames_in_word,int
             for(int n = 0; n < (sizeY/word_sizeY); ++n){
 
                 for(int j = 0; j < frames_in_word; ++j){
-                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY)).clone();
+                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY));
                     cv::Mat temp(word.rows,word.cols,CV_64FC1);
 
                     buffer_blocking.push_back(blockingVlachos(word));
@@ -166,7 +166,7 @@ double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_s
             for(int n = 0; n < (sizeY/word_sizeY); ++n){
 
                 for(int j = 0; j < frames_in_word; ++j){
-                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY)).clone();
+                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY));
                     cv::Mat temp(word.rows,word.cols,CV_64FC1);
 
                     buffer_blocking.push_back(blockingVlachos(word));
@@ -257,7 +257,7 @@ void   Loader::printFeatures(string fFeatures,int frames_in_word,int word_sizeX,
             for(int n = 0; n < (sizeY/word_sizeY); ++n){
 
                 for(int j = 0; j < frames_in_word; ++j){
-                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY)).clone();
+                    cv::Mat word = (frameY.at((i*frames_in_word)+j))(cv::Rect(word_sizeX*m,word_sizeY*n,word_sizeX,word_sizeY));
                     cv::Mat temp(word.rows,word.cols,CV_64FC1);
 
                     buffer_blocking.push_back(blockingVlachos(word));

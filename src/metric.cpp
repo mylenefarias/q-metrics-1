@@ -5,8 +5,8 @@ double   blockingWang(const cv::Mat & src)
 {
     double block_metric;
     /// Diferenca do sinal na horizontal
-    cv::Mat d_h1 = src(cv::Rect(1,0,src.cols-1,src.rows)).clone();
-    cv::Mat d_h2 = src(cv::Rect(0,0,src.cols-1,src.rows)).clone();
+    cv::Mat d_h1 = src(cv::Rect(1,0,src.cols-1,src.rows));
+    cv::Mat d_h2 = src(cv::Rect(0,0,src.cols-1,src.rows));
 
     cv::Mat d_h(src.rows,src.cols-1,CV_8SC1);
     d_h = d_h1 - d_h2;
@@ -22,8 +22,8 @@ double   blockingWang(const cv::Mat & src)
     B_h = B_h/(src.rows * (floor(src.cols/8)-1));
 
     /// Diferenca do sinal na vertical
-    cv::Mat d_v1 = src(cv::Rect(0,1,src.cols,src.rows-1)).clone();
-    cv::Mat d_v2 = src(cv::Rect(0,0,src.cols,src.rows-1)).clone();
+    cv::Mat d_v1 = src(cv::Rect(0,1,src.cols,src.rows-1));
+    cv::Mat d_v2 = src(cv::Rect(0,0,src.cols,src.rows-1));
 
     cv::Mat d_v(src.rows-1,src.cols,CV_8SC1);
     d_v = d_v1 - d_v2;

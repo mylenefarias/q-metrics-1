@@ -90,10 +90,6 @@ void PrintHelp()
            "file: path to the .yuv file \n"
            "width: width of the video \n"
            "height: height of the video \n"
-           "YUV: 0,1,2,3 \n"
-           "\t 0 for 4:0:0 \n"
-           "\t 1 for 4:2:0 \n"
-           "\t 2 for 4:2:2 \n"
-           "\t 3 for 4:4:4 \n"
+           "YUV: 400,420,422,444 \n"
            "mode options: specific options for the mode \n");
 }
