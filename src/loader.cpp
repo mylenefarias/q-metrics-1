@@ -284,18 +284,21 @@ void   Loader::printFeatures(string fFeatures,int frames_in_word,int word_sizeX,
 void   Loader::callMetrics() {
 	double avg_blur[4] = {0,0,0,0},min_blur[4] = {1000,1000,1000,1000},max_blur[4] = {-1,-1,-1,-1};
 	FILE * f_output;
-        f_output = fopen("TesteBorragem","w");/// @todo colocar "fName.c_str()" - ".yuv"
+	string name = fName.substr(0,fName.size() - 4);
 
-    	fprintf(f_output,"Frame"
-                     	"\t"
-                    	"Winkler"
-			"\t\t"
-			"Winkler2"
-			"\t"
-			"CPBD"
-			"\t\t"
-			"Perceptual"
-                     	"\n");
+	name += ".txt";
+    f_output = fopen(name.c_str() ,"w");
+
+    fprintf(f_output,"Frame"
+                     "\t"
+                    "Winkler"
+					"\t\t"
+					"Winkler2"
+					"\t"
+					"CPBD"
+					"\t\t"
+					"Perceptual"
+                     "\n");
 
 
 	for(int frame_nr=0; frame_nr< total_frame_nr; ++frame_nr){
