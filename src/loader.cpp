@@ -66,7 +66,12 @@ long Loader::getFileSize(FILE * hFile)
 
 void    Loader::showFrame(int i)
 {
+    cv::Rect bloco(0,0,48,48);
+    cv::Mat  word = frameY.at(i)(bloco);
+
+    cv::imshow("Bloco",word);
     cv::imshow("Frame",frameY.at(i));
+
     return;
 }
 

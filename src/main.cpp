@@ -69,7 +69,6 @@ int main(int argc, char *argv[])
                 frame_atual++;
         }
 
-
     }else{
         printf("Invalid Option \n");
         PrintHelp();

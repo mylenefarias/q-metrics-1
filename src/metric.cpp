@@ -3,7 +3,7 @@
 /// https://ece.uwaterloo.ca/~z70wang/research/nr_jpeg_quality/jpeg_quality_score.m
 double   blockingWang(const cv::Mat & src)
 {
-    double block_metric;
+    double block_metric = 0;
     /// Diferenca do sinal na horizontal
     cv::Mat d_h1 = src(cv::Rect(1,0,src.cols-1,src.rows));
     cv::Mat d_h2 = src(cv::Rect(0,0,src.cols-1,src.rows));
@@ -11,11 +11,15 @@ double   blockingWang(const cv::Mat & src)
     cv::Mat d_h(src.rows,src.cols-1,CV_8SC1);
     d_h = d_h1 - d_h2;
 
+//    cv::imshow("H1",d_h1);
+//    cv::imshow("H2",d_h2);
+//    cv::imshow("H",d_h);
+
     /// Blocagem estimada horizontalmente
     double B_h = 0;
 
     for(int i = 0; i < src.rows; ++i){
-        for(int j = 0; j < (8*floor(src.cols/8)-1); ++j){
+        for(int j = 0; j < (floor(src.cols/8)-1); ++j){
             B_h += (double) abs(d_h.at<int>(i,8*(j+1)));
         }
     }
@@ -28,15 +32,19 @@ double   blockingWang(const cv::Mat & src)
     cv::Mat d_v(src.rows-1,src.cols,CV_8SC1);
     d_v = d_v1 - d_v2;
 
+//    cv::imshow("V1",d_v1);
+//    cv::imshow("V2",d_v2);
+//    cv::imshow("V",d_v);
+
     /// Blocagem estimada verticalmente
     double B_v = 0;
 
-    for(int i = 0; i < (8*floor(src.rows/8)-1); ++i){
+    for(int i = 0; i < (floor(src.rows/8)-1); ++i){
         for(int j = 0; j < src.cols; ++j){
-            B_h += (double) abs(d_h.at<int>(8*(i+1),j));
+            B_v += (double) abs(d_v.at<int>(8*(i+1),j));
         }
     }
-    B_h = B_h/(src.cols * (floor(src.rows/8)-1));
+    B_v = B_v/(src.cols * (floor(src.rows/8)-1));
 
     block_metric = (B_h+B_v)/2;
     return block_metric;
