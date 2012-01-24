@@ -4,47 +4,44 @@
 double   blockingWang(const cv::Mat & src)
 {
     double block_metric = 0;
+
+    int subcols = (int) (src.cols/8);
+    int subrows = (int) (src.rows/8);
+
     /// Diferenca do sinal na horizontal
     cv::Mat d_h1 = src(cv::Rect(1,0,src.cols-1,src.rows));
     cv::Mat d_h2 = src(cv::Rect(0,0,src.cols-1,src.rows));
-
-    cv::Mat d_h(src.rows,src.cols-1,CV_8SC1);
-    d_h = d_h1 - d_h2;
-
-//    cv::imshow("H1",d_h1);
-//    cv::imshow("H2",d_h2);
-//    cv::imshow("H",d_h);
+    d_h1.convertTo(d_h1,CV_32SC1);
+    d_h2.convertTo(d_h2,CV_32SC1);
+    /// O tipo da subtracao eh igual aos tipos dos operandos
+    cv::Mat d_h = d_h1 - d_h2;
 
     /// Blocagem estimada horizontalmente
     double B_h = 0;
 
     for(int i = 0; i < src.rows; ++i){
-        for(int j = 0; j < (floor(src.cols/8)-1); ++j){
+        for(int j = 0; j < subcols-1; ++j){
             B_h += (double) abs(d_h.at<int>(i,8*(j+1)));
         }
     }
-    B_h = B_h/(src.rows * (floor(src.cols/8)-1));
+    B_h = B_h/(src.rows * (subcols-1));
 
     /// Diferenca do sinal na vertical
     cv::Mat d_v1 = src(cv::Rect(0,1,src.cols,src.rows-1));
     cv::Mat d_v2 = src(cv::Rect(0,0,src.cols,src.rows-1));
-
-    cv::Mat d_v(src.rows-1,src.cols,CV_8SC1);
-    d_v = d_v1 - d_v2;
-
-//    cv::imshow("V1",d_v1);
-//    cv::imshow("V2",d_v2);
-//    cv::imshow("V",d_v);
+    d_v1.convertTo(d_h1,CV_32SC1);
+    d_v2.convertTo(d_h2,CV_32SC1);
+    cv::Mat d_v = d_v1 - d_v2;
 
     /// Blocagem estimada verticalmente
     double B_v = 0;
 
-    for(int i = 0; i < (floor(src.rows/8)-1); ++i){
+    for(int i = 0; i < subrows-1; ++i){
         for(int j = 0; j < src.cols; ++j){
             B_v += (double) abs(d_v.at<int>(8*(i+1),j));
         }
     }
-    B_v = B_v/(src.cols * (floor(src.rows/8)-1));
+    B_v = B_v/(src.cols * (subrows-1));
 
     block_metric = (B_h+B_v)/2;
     return block_metric;
@@ -476,12 +473,6 @@ double  blurringPerceptual(const cv::Mat &src)
 
 	return blur_index;
 }
-
-double packetLoss(const cv::Mat &src)
-{
-    return 0.0;
-}
-
 
 double contrastMean(const cv::Mat &src)
 {

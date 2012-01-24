@@ -24,14 +24,16 @@ SOURCES       = src/main.cpp \
 		src/metric.cpp \
 		src/debug.cpp \
 		src/loader.cpp \
-		src/csf.cpp 
+		src/csf.cpp \
+		src/artifacts.cpp
 OBJECTS       = main.o \
 		mat.o \
 		img.o \
 		metric.o \
 		debug.o \
 		loader.o \
-		csf.o
+		csf.o \
+		artifacts.o
 DESTDIR       = 
 TARGET        = qmetrics
 
@@ -42,42 +44,29 @@ all: Makefile $(TARGET)
 $(TARGET):  $(OBJECTS)  
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
-main.o: src/main.cpp inc/loader.h \
-		inc/global.h \
-		inc/img.hpp \
-		inc/mat.hpp \
-		inc/metric.h \
-		inc/debug.h
+main.o: src/main.cpp src/loader.cpp inc/global.h inc/img.hpp src/img.cpp inc/mat.hpp src/mat.cpp src/metric.cpp src/debug.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o src/main.cpp
 
 mat.o: src/mat.cpp inc/mat.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mat.o src/mat.cpp
 
-img.o: src/img.cpp inc/img.hpp \
-		inc/mat.hpp \
-		inc/global.h
+img.o: src/img.cpp inc/img.hpp inc/mat.hpp src/mat.cpp inc/global.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o img.o src/img.cpp
 
-metric.o: src/metric.cpp inc/metric.h \
-		inc/global.h \
-		inc/mat.hpp \
-		inc/img.hpp
+metric.o: src/metric.cpp inc/metric.h inc/global.h inc/mat.hpp src/mat.cpp inc/img.hpp src/img.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o metric.o src/metric.cpp
 
 debug.o: src/debug.cpp inc/debug.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug.o src/debug.cpp
 
-loader.o: src/loader.cpp inc/loader.h \
-		inc/global.h \
-		inc/img.hpp \
-		inc/mat.hpp \
-		inc/metric.h \
-		inc/debug.h
+loader.o: src/loader.cpp inc/loader.h inc/global.h inc/img.hpp src/img.cpp inc/mat.hpp src/mat.cpp src/metric.cpp src/debug.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o loader.o src/loader.cpp
 
-csf.o: src/csf.cpp inc/csf.h \
-		inc/mat.hpp
+csf.o: src/csf.cpp inc/csf.h inc/mat.hpp src/mat.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o csf.o src/csf.cpp
+	
+artifacts.o: src/artifacts.cpp inc/artifacts.h inc/img.hpp src/img.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o artifacts.o src/artifacts.cpp
 	
 clean: 
 	rm -f $(TARGET) $(OBJECTS) *~

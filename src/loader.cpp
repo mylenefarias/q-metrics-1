@@ -66,11 +66,29 @@ long Loader::getFileSize(FILE * hFile)
 
 void    Loader::showFrame(int i)
 {
-    cv::Rect bloco(0,0,48,48);
-    cv::Mat  word = frameY.at(i)(bloco);
+    cv::Mat  frame = frameY.at(i);
+    cv::imshow("FRAME",frame);
+}
 
-    cv::imshow("Bloco",word);
-    cv::imshow("Frame",frameY.at(i));
+void Loader::degradeFrame(int i)
+{
+    cv::Mat frame = frameY.at(i);
+    blockingFrame(frame);
+}
+
+void Loader::callDebug(int i)
+{
+    cv::Rect bloco(0,0,48,48);
+    cv::Mat  frame = frameY.at(i);
+    cv::Mat  ROI = frame(bloco);
+
+    cv::Mat word(ROI.rows,ROI.cols,ROI.type());
+    ROI.copyTo(word);
+
+    //cv::Mat word = frame(bloco).clone();
+
+    std::cout << "W-Blocagem word  = " << blockingWang(word);
+    std::cout << "\t W-Blocagem frame = " << blockingWang(frame) << std::endl;
 
     return;
 }
@@ -361,3 +379,5 @@ int  Loader::count_lines(FILE * codebook)
     rewind(codebook);
     return lines;
 }
+
+

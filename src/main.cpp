@@ -1,6 +1,8 @@
 #include "loader.h"
 #include "parser.h"
 
+#include "limits.h"
+
 void PrintHelp(void);
 
 int main(int argc, char *argv[])
@@ -67,6 +69,8 @@ int main(int argc, char *argv[])
                 frame_atual--;
             if(((char)c==108) && (frame_atual < (total_frames-1))) /// Tecla 'l'
                 frame_atual++;
+            if(((char)c==106)) /// Tecla 'j'
+                loadedFile.degradeFrame(frame_atual);
         }
 
     }else{

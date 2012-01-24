@@ -15,6 +15,7 @@
 
 #include "global.h"
 #include "img.hpp"
+#include "artifacts.h"
 #include "metric.h"
 #include "debug.h"
 
@@ -38,8 +39,10 @@ class Loader
 
                 void    callDebug();
                 void    callMetrics();
-                void    showFrame(int i);
 
+                void    showFrame(int i);
+                void    degradeFrame(int i);
+                void    callDebug(int i);
 private:
 
                 FILE * file;
