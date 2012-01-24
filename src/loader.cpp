@@ -73,7 +73,8 @@ void    Loader::showFrame(int i)
 void Loader::degradeFrame(int i)
 {
     cv::Mat frame = frameY.at(i);
-    blockingFrame(frame);
+    //blockingFrame(frame);
+    blurringFrame(frame);
 }
 
 void Loader::callDebug(int i)

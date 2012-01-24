@@ -11,6 +11,7 @@
 
 void blockingFrame(cv::Mat & src, int borderType = cv::BORDER_DEFAULT);
 void blockingFrame(const cv::Mat & src,cv::Mat & dst);
-
+void blurringFrame(cv::Mat & src);
+void blurringFrame(const cv::Mat & src,cv::Mat & dst);
 
 #endif // ARTIFACTS_H

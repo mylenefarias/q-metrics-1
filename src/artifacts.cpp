@@ -29,3 +29,8 @@ void blockingFrame(cv::Mat & src, int borderType)
         }
     }
 }
+
+void blurringFrame(cv::Mat & src)
+{
+    cv::medianBlur(src,src,5);
+}

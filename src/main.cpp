@@ -1,13 +1,10 @@
 #include "loader.h"
-#include "parser.h"
-
 #include "limits.h"
 
 void PrintHelp(void);
 
 int main(int argc, char *argv[])
 {
-    /// @todo Modularizar para a classe Parser
     if(argc < 5){
         PrintHelp();
         exit(0);
