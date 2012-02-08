@@ -38,7 +38,16 @@ enum ConvolutionType {
   CONVOLUTION_VALID /** Return only the submatrix containing elements that were not influenced by the border */
 };
 
+/**
+ * Retorna o pico na superficie de correlacao entre duas matrizes
+ */
 double maxCorr2D(const cv::Mat & src1,const cv::Mat & src2);
+
+/**
+ * Coloca em \param{dest} o resultado da convolucao de \param{img}
+ * com \param{kernel}.
+ * Equivalente ao uso da funcao conv2 do MATLAB.
+ */
 void conv2D(const cv::Mat &img, cv::Mat& dest, const cv::Mat& kernel, ConvolutionType ctype = CONVOLUTION_SAME, int btype = cv::BORDER_DEFAULT);
 
 void downsample(const cv::Mat & src,
@@ -69,6 +78,7 @@ void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r=48.0);
 * @param src   Matriz de origem
 * @param dest  Matriz de destino
 * @param r     Amortecimento do filtro
+*
 */
 void filterLawsV(const cv::Mat &src,cv::Mat & dest,float r=48.0);
 
@@ -76,6 +86,14 @@ void filterHantaoH(const cv::Mat &src,cv::Mat & dest);
 void filterHantaoV(const cv::Mat &src,cv::Mat & dest);
 void analysisTexture(const cv::Mat & src,cv::Mat & dest);
 void analysisContrast(const cv::Mat &src,cv::Mat & dest);
+
+/**
+ * Filtra a imagem em src para estimar melhor o ruído na imagem, colocando
+ * a imagem filtrada em dest.
+ * Ref.:\sa{Estimation of image noise variance}
+ */
+void filterRank(const cv::Mat &src,cv::Mat & dest);
+
 
 
 #endif // IMG_HPP

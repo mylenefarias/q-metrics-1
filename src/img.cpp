@@ -262,10 +262,6 @@ void analysisTexture(const cv::Mat & src,cv::Mat & dest)
     return ;
 }
 
-
-
-
-/// Não é desejado utilizar essa funcao in-place - adequar um const no src
 void analysisContrast(const cv::Mat & src,cv::Mat & dest)
 {
     cv::Scalar mean;
@@ -325,5 +321,31 @@ void analysisContrast(const cv::Mat & src,cv::Mat & dest)
 
     return ;
 }
+
+void filterRank(const cv::Mat &src,cv::Mat & dest)
+{
+    int i,j;
+
+    assert((dest.rows == (src.rows - 1)) && (dest.cols == (src.cols - 1)));
+
+    /// Buffer para guardar o filtro vertical
+    cv::Mat temp(src.rows - 1, src.cols, src.type());
+
+    /// Operador de diferença na direção vertical
+    for(i = 0; i < src.rows - 1; ++i){
+        for(j = 0; j < src.cols; ++j){
+            temp.at<uchar>(i,j) = src.at<uchar>(i+1,j) - src.at<uchar>(i,j);
+        }
+    }
+    /// Operador de diferença na direção horizontal
+    for(i = 0; i < src.rows - 1; ++i){
+        for(j = 0; j < src.cols - 1; ++j){
+            dest.at<uchar>(i,j) = temp.at<uchar>(i,j+1) - temp.at<uchar>(i,j);
+        }
+    }
+
+    return ;
+}
+
 
 

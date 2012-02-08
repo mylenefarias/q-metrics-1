@@ -1,6 +1,5 @@
 #include "metric.h"
 
-/// https://ece.uwaterloo.ca/~z70wang/research/nr_jpeg_quality/jpeg_quality_score.m
 double   blockingWang(const cv::Mat & src)
 {
     double block_metric = 0;
@@ -9,8 +8,8 @@ double   blockingWang(const cv::Mat & src)
     int subrows = (int) (src.rows/8);
 
     /// Diferenca do sinal na horizontal
-    cv::Mat d_h1 = src(cv::Rect(1,0,src.cols-1,src.rows));
-    cv::Mat d_h2 = src(cv::Rect(0,0,src.cols-1,src.rows));
+    cv::Mat d_h1 = src(cv::Rect(1,0,src.cols-1,src.rows)).clone();
+    cv::Mat d_h2 = src(cv::Rect(0,0,src.cols-1,src.rows)).clone();
     d_h1.convertTo(d_h1,CV_32SC1);
     d_h2.convertTo(d_h2,CV_32SC1);
     /// O tipo da subtracao eh igual aos tipos dos operandos
@@ -27,8 +26,8 @@ double   blockingWang(const cv::Mat & src)
     B_h = B_h/(src.rows * (subcols-1));
 
     /// Diferenca do sinal na vertical
-    cv::Mat d_v1 = src(cv::Rect(0,1,src.cols,src.rows-1));
-    cv::Mat d_v2 = src(cv::Rect(0,0,src.cols,src.rows-1));
+    cv::Mat d_v1 = src(cv::Rect(0,1,src.cols,src.rows-1)).clone();
+    cv::Mat d_v2 = src(cv::Rect(0,0,src.cols,src.rows-1)).clone();
     d_v1.convertTo(d_h1,CV_32SC1);
     d_v2.convertTo(d_h2,CV_32SC1);
     cv::Mat d_v = d_v1 - d_v2;
@@ -99,7 +98,11 @@ double  blurringWinkler(const cv::Mat & src,BlurWinklerOptions options,double th
     }else if(options == BW_EDGE_SOBEL){
         cv::Sobel(src,edges,CV_8UC1,1,0);
     }else if(options == BW_EDGE_SCHARR){
-        cv::Sobel(src,edges,CV_8UC1,1,0,CV_SCHARR);
+        cv::Canny(src,edges,threshold1,threshold2,CV_SCHARR);
+    }else if(options == BW_EDGE_BILATERAL){
+        cv::Mat temp(src.rows,src.cols,src.type());
+        cv::bilateralFilter(src,temp,-1,100,3);
+        cv::Canny(temp,edges,threshold1,threshold2,aperture_size);
     }
 
     unsigned int edge_counter = 0; /// Contador de bordas detectadas
@@ -308,7 +311,11 @@ double  blurringCPBD(const cv::Mat &src,BlurWinklerOptions options,double thresh
     }else if(options == BW_EDGE_SOBEL){
         cv::Sobel(src,edges,CV_8UC1,1,0);
     }else if(options == BW_EDGE_SCHARR){
-        cv::Sobel(src,edges,CV_8UC1,1,0,CV_SCHARR);
+        cv::Canny(src,edges,threshold1,threshold2,CV_SCHARR);
+    }else if(options == BW_EDGE_BILATERAL){
+        cv::Mat temp(src.rows,src.cols,src.type());
+        cv::bilateralFilter(src,temp,-1,100,3);
+        cv::Canny(temp,edges,threshold1,threshold2,aperture_size);
     }
 
     unsigned int edge_counter = 0; /// Contador de bordas detectadas
@@ -472,6 +479,341 @@ double  blurringPerceptual(const cv::Mat &src)
     blur_index = max((somaV - varV)/somaV,(somaH - varH)/somaH);
 
 	return blur_index;
+}
+
+double ringing1Farias(const cv::Mat &src)
+{
+    return noise2Farias(src);
+}
+
+double ringing2Farias(const cv::Mat & src,BlurWinklerOptions options,double threshold1,double threshold2,int aperture_size,int oscillation_threshold)
+{
+    double ring_index = 0;
+
+    cv::Mat edges(src.rows,src.cols,CV_8UC1);
+
+    if(options == BW_EDGE_CANNY){
+        cv::Canny(src,edges,threshold1,threshold2,aperture_size);
+    }else if(options == BW_EDGE_SOBEL){
+        cv::Sobel(src,edges,CV_8UC1,1,0);
+    }else if(options == BW_EDGE_SCHARR){
+        cv::Canny(src,edges,threshold1,threshold2,CV_SCHARR);
+    }else if(options == BW_EDGE_BILATERAL){
+        cv::Mat temp(src.rows,src.cols,src.type());
+        cv::bilateralFilter(src,temp,-1,100,3);
+        cv::Canny(temp,edges,threshold1,threshold2,aperture_size);
+    }
+
+    unsigned int edge_counter = 0; /// Contador de bordas detectadas
+    int c_start;                   /// Posicao do primeiro extremo em relacao a posicao da borda
+    int c_end;                     /// Posicao do ultimo extremo em relacao a borda
+    int k;
+    bool found_edge;               /// Utilizado para verificar se nao foi encontrado outra borda enquanto procura por extremos
+
+    uchar  max = 0;
+    uchar  min = 255;
+
+    enum find_state {
+        FIND_MIN,
+        FIND_MAX
+    };
+    find_state state;
+
+    int previous_extreme_val;
+    int previous_extreme_pos;
+    int cur_oscillation;
+    int max_oscillation;
+
+    for(int i = 0; i < src.rows; ++i){
+        for(int j = 0; j < src.cols; ++j){
+
+            if(edges.at<uchar>(i,j) > 0){
+                edge_counter++;
+
+                /** Lado esquerdo da borda */
+                if(j == 0) {
+                    /** Condicao de contorno */
+                }else{
+                    /** Verifica a primeira derivada para achar o ponto P1, primeiro extremo local indo para a esquerda */
+                    if((src.at<uchar>(i,j-1) - src.at<uchar>(i,j)) > 0){
+                        k   = j;
+                        max = src.at<uchar>(i,k);
+                        while((max <= src.at<uchar>(i,k-1))&&(k>1)){
+                            k--;
+                            max = src.at<uchar>(i,k);
+                            c_end  = k;
+                        }
+                        previous_extreme_val = max;
+                        state = FIND_MIN;
+                    }else /* (src.at<uchar>(i,j-1) - src.at<uchar>(i,j)) < 0 */{
+                        k   = j;
+                        min = src.at<uchar>(i,k);
+                        while((min >= src.at<uchar>(i,k-1))&&(k>1)){
+                            k--;
+                            min = src.at<uchar>(i,k);
+                            c_end  = k;
+                        }
+                        previous_extreme_val = min;
+                        state = FIND_MAX;
+                    }
+
+                    previous_extreme_pos = c_end;
+                    max_oscillation = 0;
+                    found_edge = false;
+
+                    /** Acha os extremos locais anteriores ate atingir o limiar de oscilacao ou uma outra borda marcada pelo detector */
+                    do
+                    {
+                        k = previous_extreme_pos; /// Considera-se que o ponto extremo nunca sera marcado pelo detector de bordas
+                        if(state == FIND_MAX){
+                            max = src.at<uchar>(i,k);
+                            while((max <= src.at<uchar>(i,k-1))&&(k>1)){
+                                k--;
+                                if(edges.at<uchar>(i,k) > 0){
+                                    found_edge = true;
+                                    break;
+                                }
+                                max = src.at<uchar>(i,k);
+                            }
+                            if(!found_edge){
+                                cur_oscillation = abs(max - previous_extreme_val);
+                                if(cur_oscillation > max_oscillation) max_oscillation = cur_oscillation;
+                                previous_extreme_val = max;
+                                previous_extreme_pos = k;
+                                state = FIND_MIN;
+                            }
+                        }else /* state == FIND_MIN */ {
+                            min = src.at<uchar>(i,k);
+                            while((min >= src.at<uchar>(i,k-1))&&(k>1)){
+                                k--;
+                                if(edges.at<uchar>(i,k) > 0){
+                                    found_edge = true;
+                                    break;
+                                }
+                                min = src.at<uchar>(i,k);
+                            }
+                            if(!found_edge){
+                                cur_oscillation = abs(min - previous_extreme_val);
+                                if(cur_oscillation > max_oscillation) max_oscillation = cur_oscillation;
+                                previous_extreme_val = min;
+                                previous_extreme_pos = k;
+                                state = FIND_MAX;
+                            }
+                        }
+                    } while((cur_oscillation >= oscillation_threshold) && (found_edge == false));
+
+                    c_start = previous_extreme_pos;
+                    ring_index +=  max_oscillation * abs(c_start - c_end);
+                }
+
+
+                /** Lado direito da borda */
+                if(j == (src.cols-1)){
+                    /** Condicao de contorno */
+                }else{
+                    /** Verifica a primeira derivada para achar o ponto P2, primeiro extremo local indo para a direita */
+                    if((src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) > 0){
+                        k   = j;
+                        max = src.at<uchar>(i,k);
+                        while((max <= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                            k++;
+                            max = src.at<uchar>(i,k);
+                            c_start  = k;
+                        }
+                        previous_extreme_val = max;
+                        state = FIND_MIN;
+                    }else /* (src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) <= 0 */ {
+                        k   = j;
+                        min = src.at<uchar>(i,k);
+                        while((min >= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                            k++;
+                            min = src.at<uchar>(i,k);
+                            c_start  = k;
+                        }
+                        previous_extreme_val = min;
+                        state = FIND_MAX;
+                    }
+
+                    previous_extreme_pos = c_start;
+                    max_oscillation = 0;
+                    found_edge = false;
+
+                    /** Acha os extremos locais anteriores ate atingir o limiar de oscilacao ou uma outra borda marcada pelo detector */
+                    do
+                    {
+                        k = previous_extreme_pos; /// Considera-se que o ponto extremo nunca sera marcado pelo detector de bordas
+                        if(state == FIND_MAX){
+                            max = src.at<uchar>(i,k);
+                            while((max <= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                                k++;
+                                if(edges.at<uchar>(i,k) > 0){
+                                    found_edge = true;
+                                    break;
+                                }
+                                max = src.at<uchar>(i,k);
+                            }
+                            if(!found_edge){
+                                cur_oscillation = abs(max - previous_extreme_val);
+                                if(cur_oscillation > max_oscillation) max_oscillation = cur_oscillation;
+                                previous_extreme_val = max;
+                                previous_extreme_pos = k;
+                                state = FIND_MIN;
+                            }
+                        }else /* state == FIND_MIN */ {
+                            min = src.at<uchar>(i,k);
+                            while((min >= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                                k++;
+                                if(edges.at<uchar>(i,k) > 0){
+                                    found_edge = true;
+                                    break;
+                                }
+                                min = src.at<uchar>(i,k);
+                            }
+                            if(!found_edge){
+                                cur_oscillation = abs(min - previous_extreme_val);
+                                if(cur_oscillation > max_oscillation) max_oscillation = cur_oscillation;
+                                previous_extreme_val = min;
+                                previous_extreme_pos = k;
+                                state = FIND_MAX;
+                            }
+                        }
+                    } while((cur_oscillation >= oscillation_threshold) && (found_edge == false));
+
+                    c_end = previous_extreme_pos;
+                    ring_index +=  max_oscillation * abs(c_start - c_end);
+                }
+            } /* if(edges.at<uchar>(i,j) > 0) */
+        } /* for em j */
+    } /* for em i*/
+
+
+    if(edge_counter != 0){
+        ring_index  = ring_index/edge_counter;
+    }else{
+        ring_index  = 0;
+    }
+
+    return ring_index;
+}
+double noise1Farias(const cv::Mat &src)
+{
+    double noise_index = 0.0;
+
+    /// Filtro para separar o conteúdo da imagem da estimação do ruído
+    cv::Mat filtered(src.rows - 1, src.cols - 1, src.type());
+    filterRank(src,filtered);
+
+    vector<double> blocks_variance;
+    vector<double> subblocks_variance;
+
+    int total_blocks = (filtered.rows/8)*(filtered.cols/8);
+
+    for(int m = 0; m < (filtered.rows/8); ++m){
+        for(int n = 0; n < (filtered.cols/8); ++n){
+            /// Bloco de 8x8
+            cv::Mat block = (filtered)(cv::Rect(8*m,8*n,8,8));
+
+            /// Divide o bloco em 9 sub-blocos de 4x4
+            subblocks_variance.clear();
+            for(int i = 0; i < 3; ++i){
+                for(int j = 0; j < 3; ++j){
+                    cv::Mat subblock = (block)(cv::Rect(2*i,2*j,4,4));
+                    cv::Scalar temp;
+                    cv::Scalar std;
+                    cv::meanStdDev(subblock,temp,std);
+                    subblocks_variance.push_back(std[0]);
+                }
+            }
+
+            /// Tira a média das 4 menores variâncias para ser a variância
+            std::partial_sort(subblocks_variance.begin(),subblocks_variance.begin()+4,subblocks_variance.end());
+            blocks_variance.push_back((subblocks_variance[0]+
+                                       subblocks_variance[1]+
+                                       subblocks_variance[2]+
+                                       subblocks_variance[3])/4);
+        }
+    }
+
+    int number_mean_blocks = int (total_blocks/3);
+    std::partial_sort(blocks_variance.begin(),blocks_variance.begin() + (number_mean_blocks),blocks_variance.end());
+
+    for(int i = 0; i < number_mean_blocks; ++i)
+        noise_index += (double) blocks_variance.at(i);
+
+    noise_index = noise_index/number_mean_blocks;
+    return noise_index;
+
+}
+double noise2Farias(const cv::Mat &src,double algorithm_resolution)
+{
+    double noise_index = 0.0;
+
+    /// Filtro para separar o conteúdo da imagem da estimação do ruído
+    cv::Mat filtered(src.rows - 1, src.cols - 1, src.type());
+    filterRank(src,filtered);
+
+    vector<double> blocks_variance;
+    vector<double> subblocks_variance;
+
+    for(int m = 0; m < (filtered.rows/8); ++m){
+        for(int n = 0; n < (filtered.cols/8); ++n){
+            /// Bloco de 8x8
+            cv::Mat block = (filtered)(cv::Rect(8*m,8*n,8,8));
+
+            /// Divide o bloco em 9 sub-blocos de 4x4
+            subblocks_variance.clear();
+            for(int i = 0; i < 3; ++i){
+                for(int j = 0; j < 3; ++j){
+                    cv::Mat subblock = (block)(cv::Rect(2*i,2*j,4,4));
+                    cv::Scalar temp;
+                    cv::Scalar std;
+                    cv::meanStdDev(subblock,temp,std);
+                    subblocks_variance.push_back(std[0]);
+                }
+            }
+
+            /// Tira a média das 4 menores variâncias para ser a variância
+            std::partial_sort(subblocks_variance.begin(),subblocks_variance.begin()+4,subblocks_variance.end());
+            blocks_variance.push_back((subblocks_variance[0]+
+                                       subblocks_variance[1]+
+                                       subblocks_variance[2]+
+                                       subblocks_variance[3])/4);
+        }
+    }
+
+    /// Algoritmo iterativo para estimar a variância
+    /// Parâmetros iniciais
+    double s_old = 0.0;
+    double s_new = 0.0;
+    int count = 0;
+    double threshold = INFINITY;
+    /// Cálculo iterativo do valor quadrático médio do histograma
+    do
+    {
+        /// Cálculo do novo valor quadrático médio baseado no novo threshold
+        s_new = 0.0;
+        for(unsigned int i = 0; i < blocks_variance.size(); ++i){
+            if(blocks_variance.at(i) <= threshold){ /// cut-off
+                s_new += pow(blocks_variance.at(i),2);
+                count++;
+            }
+        }
+        s_new = s_new/count;
+
+        /// Critério de parada
+        if(fabs(s_new - s_old) < algorithm_resolution){
+            noise_index = s_new;
+            break;
+        }
+
+        /// Guarda o valor quadrático médio para critério de parada
+        s_old = s_new;
+        /// Computa novo valor de threshold de cut-off
+        threshold = 1.5 * s_old;
+
+    } while(true);
+
+    return noise_index;
 }
 
 double contrastMean(const cv::Mat &src)

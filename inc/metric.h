@@ -30,21 +30,28 @@
 #include "mat.hpp"
 #include "img.hpp"
 
+/// Resume a feature de saida para um escalar
 enum    OutputOptions{
     OUT_AVERAGE,
     OUT_MEDIAN
 };
 
+/// Escolher o detector de bordas apropriado
 enum    BlurWinklerOptions{
     BW_EDGE_CANNY,
     BW_EDGE_SOBEL,
-    BW_EDGE_SCHARR
+    BW_EDGE_SCHARR,
+    BW_EDGE_BILATERAL
 };
 
-
+/// (ref.: Detection of blocking artifacts in compressed video)
 double  blockingVlachos(const cv::Mat &src);
+/// (ref.: No-Reference perceptual quality assessment of jpeg compressed)
+/// Implementacao em MATLAB:
+/// https://ece.uwaterloo.ca/~z70wang/research/nr_jpeg_quality/jpeg_quality_score.m
 double  blockingWang(const cv::Mat & src);
 
+/// (ref.: Perceptual blur and ringing metrics: Application to JPEG2000)
 double  blurringWinkler(const cv::Mat &src,
                         BlurWinklerOptions options = BW_EDGE_CANNY,
                         double threshold1 = 10,
@@ -64,7 +71,16 @@ double  blurringCPBD(const cv::Mat & src,
 /// (ref.: The Blur Effect: Perception and Estimation with a New No-Reference Perceptual Blur Metric)
 double  blurringPerceptual(const cv::Mat & src);
 
-double  packetLoss(const cv::Mat &src);
+/// (ref.: No-Reference and Reduced Reference Video Quality Metrics: New Contributions)
+double  ringing1Farias(const cv::Mat &src);
+double  ringing2Farias(const cv::Mat &src,
+                       BlurWinklerOptions options = BW_EDGE_CANNY,
+                       double threshold1 = 10,
+                       double threshold2 = 200,
+                       int aperture_size = 3,
+                       int oscillation_threshold = 15);
+double  noise1Farias(const cv::Mat &src);
+double  noise2Farias(const cv::Mat &src, double algorithm_resolution = 0.001);
 
 double contrastMean(const cv::Mat &src);
 double contrastMichelson(const cv::Mat & src);

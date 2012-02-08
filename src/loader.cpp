@@ -39,6 +39,8 @@ Loader::Loader(string fN, int sX, int sY, int yuv)
 
     //delete ybuf;
     fclose(file);
+
+    degrade_iteration = 0;
 }
 
 Loader::~Loader()
@@ -73,24 +75,36 @@ void    Loader::showFrame(int i)
 void Loader::degradeFrame(int i)
 {
     cv::Mat frame = frameY.at(i);
-    //blockingFrame(frame);
-    blurringFrame(frame);
+//    blockingFrame(frame);
+//    blurringFrame(frame);
+    ringingFrame(frame,-10.0f,RINGING_375ns);
+
+//    FILE * f_teste;
+//    f_teste = fopen("teste.txt","a");
+//    fprintf(f_teste,"%d : %f  \n", degrade_iteration, ringing2Farias(frame));
+//    fclose(f_teste);
+
+    degrade_iteration += 1;
+
+}
+
+void Loader::dumpFrame(int i)
+{
+    cv::Mat frame = frameY.at(i);
+    FILE * f_dump = fopen("dump","w");
+    for(int i = 0; i < frame.rows; ++i){
+        for(int j = 0; j < frame.cols; ++j){
+            fprintf(f_dump,"%d;",frame.at<uchar>(i,j));
+        }
+        fprintf(f_dump,"\n");
+    }
+    fclose(f_dump);
 }
 
 void Loader::callDebug(int i)
 {
-    cv::Rect bloco(0,0,48,48);
-    cv::Mat  frame = frameY.at(i);
-    cv::Mat  ROI = frame(bloco);
-
-    cv::Mat word(ROI.rows,ROI.cols,ROI.type());
-    ROI.copyTo(word);
-
-    //cv::Mat word = frame(bloco).clone();
-
-    std::cout << "W-Blocagem word  = " << blockingWang(word);
-    std::cout << "\t W-Blocagem frame = " << blockingWang(frame) << std::endl;
-
+    cv::Mat frame = frameY.at(i);
+    cv::imshow("FRAME",frame);
     return;
 }
 
@@ -358,6 +372,33 @@ void   Loader::callMetrics() {
 
 	fclose(f_output);
 }
+
+void   Loader::callMetrics2(float DMOS) {
+
+    FILE * f_output;
+    f_output = fopen("teste_blur_bilateral.txt" ,"a");
+
+    vector<double> buffer_Winkler;
+    vector<double> buffer_Winkler2;
+    vector<double> buffer_CPBD;
+    vector<double> buffer_Perceptual;
+
+    for(int frame_nr=0; frame_nr< total_frame_nr; ++frame_nr){
+        buffer_Winkler.push_back(blurringWinkler(frameY.at(frame_nr), BW_EDGE_BILATERAL, 10, 200, 3));
+        buffer_Winkler2.push_back(blurringWinklerV2(frameY.at(frame_nr), BW_EDGE_BILATERAL, 10, 200, 3));
+        buffer_CPBD.push_back(blurringCPBD(frameY.at(frame_nr), BW_EDGE_BILATERAL, 10, 200, 3));
+        buffer_Perceptual.push_back(blurringPerceptual(frameY.at(frame_nr)));
+
+    }
+    fprintf(f_output,"%f;%f;%f;%f;%f\n",median(buffer_Winkler),
+                                        median(buffer_Winkler2),
+                                        median(buffer_CPBD),
+                                        median(buffer_Perceptual),
+                                        DMOS);
+
+    fclose(f_output);
+}
+
 
 int    Loader::getTotalFrameNr() const
 {

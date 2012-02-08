@@ -49,7 +49,10 @@ int main(int argc, char *argv[])
 
     }else if(mode == "metrics"){
 
-        loadedFile.callMetrics();
+        float DMOS = atof(argv[6]);
+
+        //loadedFile.callMetrics();
+        loadedFile.callMetrics2(DMOS);
 
     }else if(mode == "video"){
 
@@ -57,7 +60,7 @@ int main(int argc, char *argv[])
         int total_frames = loadedFile.getTotalFrameNr();
 
         while(true){
-            loadedFile.showFrame(frame_atual);
+            loadedFile.callDebug(frame_atual);
 
             int c = cvWaitKey(20);
             if((char)c==27)                                        /// Tecla ESC
@@ -66,10 +69,9 @@ int main(int argc, char *argv[])
                 frame_atual--;
             if(((char)c==108) && (frame_atual < (total_frames-1))) /// Tecla 'l'
                 frame_atual++;
-            if(((char)c==106)) /// Tecla 'j'
+            if(((char)c==106))                                     /// Tecla 'j'
                 loadedFile.degradeFrame(frame_atual);
         }
-
     }else{
         printf("Invalid Option \n");
         PrintHelp();

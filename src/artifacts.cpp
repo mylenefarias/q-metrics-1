@@ -34,3 +34,41 @@ void blurringFrame(cv::Mat & src)
 {
     cv::medianBlur(src,src,5);
 }
+
+void ringingFrame(cv::Mat & src, double echo_amplitude, RingingEchoDisplacement echo_displacement)
+{
+    assert(src.type() == CV_8UC1);
+    assert((-30 <= echo_amplitude) && (echo_amplitude <= -1));
+    assert((0 <= echo_displacement) && (echo_amplitude <= 2));
+
+    cv::Mat filter_window = cv::Mat::zeros(13,13,CV_32FC1);
+
+    double tap_sum = 175 + (2*echo_amplitude);
+    double tap_filter1[] = {0,0,0,echo_amplitude/tap_sum,0,0,175/tap_sum,0,0,echo_amplitude/tap_sum,0,0,0};
+    double tap_filter2[] = {0,0,echo_amplitude/tap_sum,0,0,0,175/tap_sum,0,0,0,echo_amplitude/tap_sum,0,0};
+    double tap_filter3[] = {echo_amplitude/tap_sum,0,0,0,0,0,175/tap_sum,0,0,0,0,0,echo_amplitude/tap_sum};
+
+    switch(echo_displacement)
+    {
+        case RINGING_375ns:
+            for(int i = 0; i < 13; ++i)
+                filter_window.row(6).at<float>(0,i) = tap_filter1[i];
+            break;
+        case RINGING_500ns:
+            for(int i = 0; i < 13; ++i)
+                 filter_window.row(6).at<float>(0,i) = tap_filter2[i];
+            break;
+        case RINGING_750ns:
+            for(int i = 0; i < 13; ++i)
+                filter_window.row(6).at<float>(0,i) = tap_filter3[i];
+            break;
+    }
+
+    cv::Mat filter_window_t(13,13,CV_32FC1);
+    cv::transpose(filter_window,filter_window_t);
+
+    cv::Mat hor_filter(src.rows,src.cols,src.type());
+    conv2D(src,hor_filter,filter_window,CONVOLUTION_SAME,cv::BORDER_REPLICATE);
+    conv2D(hor_filter,src,filter_window_t);
+
+}

@@ -28,6 +28,7 @@
 #include <fftw3.h>
 
 #include <vector>
+#include <algorithm>
 
 #define EPSILON 2.2204e-16
 
@@ -45,6 +46,25 @@ template <typename T>
         s += v.at(i);
     s /= v.size();
     return s;
+}
+
+template <typename T>
+    double median(std::vector<T> const & v)
+{
+    assert(v.size() != 0);
+    std::vector<T> w = v;
+
+    int n = (int) w.size()/2;
+    std::nth_element(w.begin(),w.end()+n,w.end());
+
+    if((w.size()) % 2 == 1){
+        return w.at(n);
+    }else{
+        int a = w.at(n);
+        std::nth_element(w.begin(),w.end()+(n-1),w.end());
+        int b = w.at(n-1);
+        return (double) (a+b)/2;
+    }
 }
 
 

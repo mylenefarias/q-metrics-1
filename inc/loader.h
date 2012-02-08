@@ -39,8 +39,10 @@ class Loader
 
                 void    callDebug();
                 void    callMetrics();
+                void    callMetrics2(float DMOS);
 
                 void    showFrame(int i);
+                void    dumpFrame(int i);
                 void    degradeFrame(int i);
                 void    callDebug(int i);
 private:
@@ -54,6 +56,8 @@ private:
                 int 	sizeY;          /// Numero de colunas (largura)
                 int 	format;         /// Formato do video (444,422,420,400)
                 int     total_frame_nr;	/// Numero total de frames
+
+                int     degrade_iteration;
 
                 double  pool_frame(vector<double> v);
                 int     count_lines(FILE *codebook);
