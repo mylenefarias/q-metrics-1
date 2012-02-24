@@ -72,3 +72,14 @@ void ringingFrame(cv::Mat & src, double echo_amplitude, RingingEchoDisplacement 
     conv2D(hor_filter,src,filter_window_t);
 
 }
+
+void noiseWhiteFrame(cv::Mat &src, double mean, double std)
+{
+    cv::Scalar m(mean);
+    cv::Scalar s(std);
+
+    cv::Mat noise(src.rows,src.cols,src.type());
+
+    cv::randn(noise,m,s);
+    cv::add(src,noise,src);
+}

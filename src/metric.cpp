@@ -708,16 +708,16 @@ double noise1Farias(const cv::Mat &src)
 
     int total_blocks = (filtered.rows/8)*(filtered.cols/8);
 
-    for(int m = 0; m < (filtered.rows/8); ++m){
-        for(int n = 0; n < (filtered.cols/8); ++n){
+    for(int m = 0; m < ((int) (filtered.rows/8)); ++m){
+        for(int n = 0; n < ((int) (filtered.cols/8)); ++n){
             /// Bloco de 8x8
-            cv::Mat block = (filtered)(cv::Rect(8*m,8*n,8,8));
+            cv::Mat block = (filtered)(cv::Rect(8*n,8*m,8,8));
 
             /// Divide o bloco em 9 sub-blocos de 4x4
             subblocks_variance.clear();
             for(int i = 0; i < 3; ++i){
                 for(int j = 0; j < 3; ++j){
-                    cv::Mat subblock = (block)(cv::Rect(2*i,2*j,4,4));
+                    cv::Mat subblock = (block)(cv::Rect(2*j,2*i,4,4));
                     cv::Scalar temp;
                     cv::Scalar std;
                     cv::meanStdDev(subblock,temp,std);
@@ -758,13 +758,13 @@ double noise2Farias(const cv::Mat &src,double algorithm_resolution)
     for(int m = 0; m < (filtered.rows/8); ++m){
         for(int n = 0; n < (filtered.cols/8); ++n){
             /// Bloco de 8x8
-            cv::Mat block = (filtered)(cv::Rect(8*m,8*n,8,8));
+            cv::Mat block = (filtered)(cv::Rect(8*n,8*m,8,8));
 
             /// Divide o bloco em 9 sub-blocos de 4x4
             subblocks_variance.clear();
             for(int i = 0; i < 3; ++i){
                 for(int j = 0; j < 3; ++j){
-                    cv::Mat subblock = (block)(cv::Rect(2*i,2*j,4,4));
+                    cv::Mat subblock = (block)(cv::Rect(2*j,2*i,4,4));
                     cv::Scalar temp;
                     cv::Scalar std;
                     cv::meanStdDev(subblock,temp,std);

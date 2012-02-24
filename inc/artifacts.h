@@ -9,7 +9,6 @@
 
 #include "img.hpp"
 
-
 /// (ref.: Detectability and Annoyance of Synthetic Blocky and Blurry Artifacts)
 void blockingFrame(cv::Mat & src, int borderType = cv::BORDER_DEFAULT);
 void blockingFrame(const cv::Mat & src,cv::Mat & dst);
@@ -26,5 +25,8 @@ enum RingingEchoDisplacement{
   RINGING_750ns
 };
 void ringingFrame(cv::Mat & src, double echo_amplitude, RingingEchoDisplacement echo_displacement);
+
+/// Insere ruído branco na imagem
+void noiseWhiteFrame(cv::Mat & src, double mean, double std);
 
 #endif // ARTIFACTS_H

@@ -77,12 +77,13 @@ void Loader::degradeFrame(int i)
     cv::Mat frame = frameY.at(i);
 //    blockingFrame(frame);
 //    blurringFrame(frame);
-    ringingFrame(frame,-10.0f,RINGING_375ns);
+//    ringingFrame(frame,-10.0f,RINGING_375ns);
+    noiseWhiteFrame(frame,5,10);
 
-//    FILE * f_teste;
-//    f_teste = fopen("teste.txt","a");
-//    fprintf(f_teste,"%d : %f  \n", degrade_iteration, ringing2Farias(frame));
-//    fclose(f_teste);
+    FILE * f_teste;
+    f_teste = fopen("teste.txt","a");
+    fprintf(f_teste,"%d : %f  \n", degrade_iteration, noise1Farias(frame));
+    fclose(f_teste);
 
     degrade_iteration += 1;
 
