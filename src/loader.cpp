@@ -1,4 +1,5 @@
 #include "loader.h"
+#include <string>
 
 Loader::Loader(string fN, int sX, int sY, int yuv)
     :fName(fN),sizeX(sX),sizeY(sY),format(yuv)

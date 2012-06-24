@@ -1,4 +1,5 @@
 #include "debug.h"
+#include <string>
 
 void writeFrame(cv::Mat & src, string fName)
 {
