@@ -72,6 +72,10 @@ int main(int argc, char *argv[])
             if(((char)c==106))                                     /// Tecla 'j'
                 loadedFile.degradeFrame(frame_atual);
         }
+    }else if(mode == "degrade"){
+        string output(argv[6]);
+        loadedFile.degradeVideo(output);
+
     }else{
         printf("Invalid Option \n");
         PrintHelp();
@@ -89,6 +93,7 @@ void PrintHelp()
            "\t predict: predict a MOS using codebook \n"
            "\t video: show the video \n"
            "\t metrics: call the metrics \n"
+           "\t degrade: generate a video with defects \n"
            "file: path to the .yuv file \n"
            "width: width of the video \n"
            "height: height of the video \n"

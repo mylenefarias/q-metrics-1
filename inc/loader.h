@@ -40,12 +40,14 @@ class Loader
                 void    callDebug();
                 void    callMetrics();
                 void    callMetrics2(float DMOS);
+                void    degradeVideo(string degradedName);
 
                 void    showFrame(int i);
                 void    dumpFrame(int i);
                 void    degradeFrame(int i);
                 void    callDebug(int i);
-private:
+
+        private:
 
                 FILE * file;
                 string fName;

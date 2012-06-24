@@ -76,17 +76,70 @@ void Loader::degradeFrame(int i)
 {
     cv::Mat frame = frameY.at(i);
 //    blockingFrame(frame);
-//    blurringFrame(frame);
+      blurringFrame(frame);
 //    ringingFrame(frame,-10.0f,RINGING_375ns);
-    noiseWhiteFrame(frame,5,10);
+//    noiseWhiteFrame(frame,0,110);
 
-    FILE * f_teste;
-    f_teste = fopen("teste.txt","a");
-    fprintf(f_teste,"%d : %f  \n", degrade_iteration, noise1Farias(frame));
-    fclose(f_teste);
+//    DEBUG
+//    FILE * f_teste;
+//    f_teste = fopen("teste.txt","a");
+//    fprintf(f_teste,"%d : %f  \n", degrade_iteration, noise1Farias(frame));
+//    fclose(f_teste);
 
     degrade_iteration += 1;
 
+}
+
+/// @todo melhorar a forma de gerar as componentes U e V do arquivo degradado
+/// quando melhorar a forma de carregar as componentes U e V no construtor.
+/// Do jeito atual carrega o arquivo de video duas vezes.
+void Loader::degradeVideo(string degradedName)
+{
+    FILE * f_degraded;
+    FILE * f_original;
+
+    f_degraded = fopen(degradedName.c_str(),"w");
+
+    // config. para 400
+    int yuvbuffersize = sizeX*sizeY;
+    int uvbuffersize = 0;
+
+    uchar * uvbuffer;
+
+    if(format != 400){
+        f_original = fopen(fName.c_str(),"rb");
+        if     (format == 420){
+            yuvbuffersize = 3*sizeX*sizeY/2;
+            uvbuffersize  = sizeX*sizeY/2;
+        }else if(format == 422){
+            yuvbuffersize = 2*sizeX*sizeY;
+            uvbuffersize  = sizeX*sizeY;
+        }else if(format == 444){
+            yuvbuffersize = 3*sizeX*sizeY;
+            uvbuffersize = 2*sizeX*sizeY;
+        }
+    }
+
+    uvbuffer = new uchar[total_frame_nr*uvbuffersize];
+
+    for(int frame_nr=0; frame_nr< total_frame_nr; ++frame_nr){
+        degradeFrame(frame_nr);
+        fwrite(frameY.at(frame_nr).data,sizeX*sizeY,1,f_degraded);
+
+        if(format != 400)
+        {
+            fseek(f_original,sizeX*sizeY*(frame_nr+1),SEEK_SET);
+            if(fread((uchar*)(uvbuffer+(uvbuffersize*frame_nr)),uvbuffersize,1,f_original) == 0){
+                printf("Problema ao ler o arquivo .yuv \n");
+            }
+            fwrite(uvbuffer,uvbuffersize,1,f_degraded);
+        }
+    }
+
+    delete uvbuffer;
+
+    if(format != 400) fclose(f_original);
+    fclose(f_degraded);
 }
 
 void Loader::dumpFrame(int i)
