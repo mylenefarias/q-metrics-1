@@ -3,7 +3,9 @@
 
 #include <vector>
 #include <string>
+
 #include <fftw3.h>
+
 #include <opencv/ml.h>
 
 // Esses cabecalhos sao necessarios para a leitura do tamanho
@@ -22,7 +24,7 @@ using namespace std;
 class Loader
 {
         public:
-                Loader (std::string,int,int,int);
+                Loader (string,int,int,int);
                 ~Loader();
 
                 uchar*  getYUVBuffer() const;
@@ -30,26 +32,24 @@ class Loader
 
                 long    getFileSize(FILE *hFile);
 
-                void    writeCodebook(std::string fCodebook, float DMOS, int frames_in_word, int word_sizeX, int word_sizeY);
-                void    printFeatures(std::string fFeatures, int frames_in_word, int word_sizeX, int word_sizeY);
-                double  predictMOS(std::string fCodebook, int K, int frames_in_word, int word_sizeX, int word_sizeY);
+                void    writeCodebook(string fCodebook, float DMOS, int frames_in_word, int word_sizeX, int word_sizeY);
+                void    printFeatures(string fFeatures, int frames_in_word, int word_sizeX, int word_sizeY);
+                double  predictMOS(string fCodebook, int K, int frames_in_word, int word_sizeX, int word_sizeY);
                 void    compareLIVE(double predicted_value);
 
                 void    callDebug();
                 void    callDebug2(int i);
                 void    callMetrics();
                 void    callMetrics2(float DMOS);
-                void    degradeVideo(std::string degradedName, std::string deg);
 
                 void    showFrame(int i);
                 void    dumpFrame(int i);
-                void    degradeFrame(int i, std::string deg);
+                void    degradeFrame(int i);
                 void    callDebug(int i);
-
-        private:
+private:
 
                 FILE * file;
-                std::string fName;
+                string fName;
 
                 vector<cv::Mat> frameY;
                 vector<cv::Mat> pckerr;

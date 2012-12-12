@@ -46,211 +46,6 @@ double   blockingWang(const cv::Mat & src)
     return block_metric;
 }
 
-double   blockingLiuHeynderickx(const cv::Mat & src)
-{
-    double block_metric = 0, block_metric1 = 0, block_metric2 = 0;
-	double ilh, ith, ilv, itv, VCh, VCv;
-    double VCxBS_H = 0.0, VCxNBS_H = 0.0, VCxBS_V = 0.0, VCxNBS_V = 0.0;
-	double aux1, aux2, aux3, aux4;
-	int k=7, l=7;
-    
-	cv::Mat TH(src.rows,src.cols,CV_64FC1);
-    cv::Mat LH(src.rows,src.cols,CV_64FC1);
-	cv::Mat TV(src.rows,src.cols,CV_64FC1);
-    cv::Mat LV(src.rows,src.cols,CV_64FC1);
-	
-    ///Transformando a imagem do video em double
-    cv::Mat src_w(src.rows,src.cols,CV_64FC1);
-    src.convertTo(src_w, CV_64FC1, 1,0);
-	
-	///Filtros Utilizados na métrica
-	filterLawsH(src_w,TH,48);
-	filterLawsV(src_w,TV,48);
-	filterHantaoH(src_w,LH,26);
-	filterHantaoV(src_w,LV,26);
-
-    for(int i = 4; i <= (src_w.rows-4); ++i){
-		for(int j = 4; j <= (src_w.cols-4); ++j){
-					
-		///Textura e Luminância
-			ith = TH.at<double>(i,j); 
-			ilh = LH.at<double>(i,j); 
-			itv = TV.at<double>(i,j); 
-			ilv = LV.at<double>(i,j); 
-				
-			if(ith < 0.15) 
-				ith = 0.0;
-			if(itv < 0.15) 
-				itv = 0.0;
-			
-			
-		///Cálculo do Coeficiente de Visibilidade (VC)
-			///Horizontal
-			if ((ilh >= 0) && (ilh <= 81)) 
-				VCh = (1/(pow((1 + ith), 5))) * sqrt(ilh/81);
-			else
-				VCh = (1 / (pow((1 + ith), 5))) * (((0.3/174)*(81-ilh)) + 1);	      
-			///Vertical
-			if ((ilv >= 0) && (ilv <= 81))
-				VCv = (1/(pow((1 + itv), 5))) * sqrt(ilv/81);
-			else
-				VCv = (1 / (pow((1 + itv), 5))) * (((0.3/174)*(81-ilv)) + 1);	      
-
-		///Block-Strenght e Non-Block Strenght
-			///Horinzontal	
-			if(j==k+1) 
-				k += 8;
-			if(j==k)
-				VCxBS_H += pow(VCh * (src_w.at<double>(i,j) - src_w.at<double>(i,j+1)),2);
-			else
-				VCxNBS_H += pow(VCh * (src_w.at<double>(i,j) - src_w.at<double>(i,j+1)),2);
-			///Vertical
-			if(i==l+1)
-				l += 8;
-			if(i==l)
-				VCxBS_V += pow(VCv * (src_w.at<double>(i,j) - src_w.at<double>(i+1,j)),2);
-			else			
-				VCxNBS_V += pow(VCv * (src_w.at<double>(i,j) - src_w.at<double>(i+1,j)),2);				
-		}
-		k = 7;
-	}
-	///Calculando a L2-NORM
-	aux1 = sqrt(VCxBS_H);
-	aux2 = sqrt(VCxNBS_H);
-	aux3 = sqrt(VCxBS_V);
-	aux4 = sqrt(VCxNBS_V);
-		
-	///Calculando metricas na horizontal
-    if(aux2 != 0) 
-		block_metric1 = (double) aux1 / aux2;
-	else 
-		block_metric1 = 0;
-
-	///Calculando metricas na vertical
-    if(aux4 != 0) 
-		block_metric2 = (double) aux3 / aux4;
-	else 
-		block_metric2 = 0;
-	
-	///Juntando as métricas
-	block_metric = block_metric1 + block_metric2;
-	
-    return block_metric;
-}
-
-double   blockingYammineWigeKaup(const cv::Mat & src)
-{
-    double block_metric_h, block_metric_v, block_metric;
-
-    double wqth=0.0, wh=0.0, wqtv=0.0, wv=0.0;
-    double qh, qth, Wah, Wbh, Wh, qv, qtv, Wav, Wbv, Wv;
-
-    cv::Scalar oah, obh, och, oav, obv, ocv, w;
-    int i=8, j=8; 
-
-    cv::Mat src_h(src.rows,src.cols,CV_64FC1);
-    cv::Mat src_v(src.rows,src.cols,CV_64FC1);
-    src.convertTo(src_h, CV_64FC1, 1, 0);
-    src.convertTo(src_v, CV_64FC1, 1, 0);
-	Sobel(src_h, src_h, src_h.depth(), 1, 0, 3, 1, 0);
-	Sobel(src_v, src_v, src_v.depth(), 0, 1, 3, 1, 0);
-	
-	///Matriz Pedida
-    cv::Mat Ah(6,4,CV_64FC1);
-    cv::Mat Bh(6,4,CV_64FC1);
-    cv::Mat Ch(6,4,CV_64FC1);
-    cv::Mat Av(6,4,CV_64FC1);
-    cv::Mat Bv(6,4,CV_64FC1);
-    cv::Mat Cv(6,4,CV_64FC1);
-
-	///Inicio da métrica
-	while(i < (src.rows-8)){
-		while(j < (src.cols-8)){
-
-			///Separando a imagem em partes de 2 blocos
-    		for(int i1 = 0; i1 < 8; i1++){
-				for(int j1 = 0; j1 < 8; j1++){
-					if(i1 > 1 && j1 > 2 && j1 < 7){
-						Ah.at<double>(i1-2,j1-3) = src_h.at<double>(i,j);
-						Bh.at<double>(i1-2,j1-3) = src_h.at<double>(i,j+8);
-						Ch.at<double>(i1-2,j1-3) = src_h.at<double>(i,j+4);
-					
-						Av.at<double>(i1-2,j1-3) = src_v.at<double>(i,j);
-						Bv.at<double>(i1-2,j1-3) = src_v.at<double>(i,j+8);
-						Cv.at<double>(i1-2,j1-3) = src_v.at<double>(i,j+4);
-					}
-					j++;
-				}
-				i++;
-				j -=8;
-			}
-
-			i -=8;
-			j +=16;
-
-			///Calcula aux = w(weigthing factor) x qt(quality estimate) (aux1 = w (weigthing factor)
-			cv::meanStdDev(Ah, w, oah);
-			cv::meanStdDev(Bh, w, obh);
-			cv::meanStdDev(Ch, w, och);
-			
-			cv::meanStdDev(Av, w, oav);
-			cv::meanStdDev(Bv, w, obv);
-			cv::meanStdDev(Cv, w, ocv);
-
-		///Horizontal
-			if( (oah[0] < obh[0]) && oah[0] < 5)
-				Wah = (-0.06 * oah[0]) + 0.8;
-			else if( (obh[0] < oah[0]) && obh[0] < 5)
-				Wah = (0.06 * oah[0]) + 0.2;
-			else
-				Wah = 0.5;	
-			Wbh = 1 - Wah;
-   
-			qh = ((Wah * oah[0]) + (Wbh * obh[0]) + 0.6) / (och[0] + 0.1);
-
-			qth = 1 - exp((-16.5) * qh);
-	
-			if (qth <= 0.88)
-				Wh = 1;
-			else
-				Wh = exp((log(0.001) / 0.12) * (qth - 0.88));
-
-		///Vertical
-			if( (oav[0] < obv[0]) && oav[0] < 5)
-				Wav = (-0.06 * oav[0]) + 0.8;
-			else if( (obv[0] < oav[0]) && obv[0] < 5)
-				Wav = (0.06 * oav[0]) + 0.2;
-			else
-				Wav = 0.5;	
-			Wbv = 1 - Wav;
-   
-			qv = ((Wav * oav[0]) + (Wbv * obv[0]) + 0.6) / (ocv[0] + 0.1);
-
-			qtv = 1 - exp((-16.5) * qv);
-	
-			if (qtv <= 0.88)
-				Wv = 1;
-			else
-				Wv = exp((log(0.001) / 0.12) * (qtv - 0.88));
-			///Calculo na horizontal
-			wqth += (Wh * qth);
-			wh += Wh;
-			///Calculo na vertical
-			wqtv += (Wv * qtv);
-			wv += Wv;
-		}
-		i +=8;
-		j = 8;
-    }
-
-    block_metric_h = wqth/wh;
-    block_metric_v = wqtv/wv;
-    
-	block_metric = block_metric_h + block_metric_v;
-
-    return block_metric;
-}
-
 double   blockingVlachos(const cv::Mat & src)
 {
     double block_metric;
@@ -603,35 +398,48 @@ double  blurringCPBD(const cv::Mat &src,BlurWinklerOptions options,double thresh
 
     if(edge_counter == 0) return 0.0;
 
-	double P, CPBD = 0;
+	double P, CPBD_V = 0,CPBD_H = 0;
 	int Beta = 0.5;//least squares fitting
-	cv::Mat contrast(src.rows,src.cols,CV_8UC1);
+	cv::Mat contrastV(src.rows,src.cols,CV_8UC1);
+	cv::Mat contrastH(src.rows,src.cols,CV_8UC1);
 	
-	localContrastRMS(src,contrast,3);//todo: testar outros valores
+	filterHantaoV(src,contrastV);
+	filterHantaoH(src,contrastH);
 	for(int i = 0; i < src.rows; ++i){/*Atribui o valor 5 ou 3 dependendo do contraste*/
         	for(int j = 0; j < src.cols; ++j){
-			if(contrast.at<uchar>(i,j) <= 50)
-				contrast.at<uchar>(i,j) = 5;
+			if(contrastV.at<uchar>(i,j) <= 50)
+				contrastV.at<uchar>(i,j) = 5;
 			else
-				contrast.at<uchar>(i,j) = 3;
+				contrastV.at<uchar>(i,j) = 3;
+
+			if(contrastH.at<uchar>(i,j) <= 50)
+				contrastH.at<uchar>(i,j) = 5;
+			else
+				contrastH.at<uchar>(i,j) = 3;
 		}
 	}
 	
 	for(int i = 0; i < src.rows; ++i){/*Calcula a probabilidade acumulada*/
         	for(int j = 0; j < src.cols; ++j){
 			if(edges.at<uchar>(i,j) > 0){
-				if(edges.at<uchar>(i,j)/contrast.at<uchar>(i,j) > 0)
-					P = 1 - exp( -(edges.at<uchar>(i,j)/contrast.at<uchar>(i,j)) ^Beta );
+				if(edges.at<uchar>(i,j)/contrastV.at<uchar>(i,j) > 0)
+					P = 1 - exp( -(edges.at<uchar>(i,j)/contrastV.at<uchar>(i,j)) ^Beta );
 				else
-					P = 1 - exp( (edges.at<uchar>(i,j)/contrast.at<uchar>(i,j)) ^Beta );
+					P = 1 - exp( (edges.at<uchar>(i,j)/contrastV.at<uchar>(i,j)) ^Beta );
 				if(P <= (1-exp(-1)) ) //63%
-					CPBD += P/edge_counter; //Normalizado
-			
+					CPBD_V += P/edge_counter; //Normalizado
+
+				if(edges.at<uchar>(i,j)/contrastH.at<uchar>(i,j) > 0)
+					P = 1 - exp( -(edges.at<uchar>(i,j)/contrastH.at<uchar>(i,j)) ^Beta );
+				else
+					P = 1 - exp( (edges.at<uchar>(i,j)/contrastH.at<uchar>(i,j)) ^Beta );
+				if(P <= (1-exp(-1)) ) 
+					CPBD_H += P/edge_counter; 			
 			}
 		}
 	}
 
-	blur_index = CPBD;
+	blur_index = cv::max(CPBD_V, CPBD_H);
 
 	return blur_index;
 }
@@ -671,292 +479,6 @@ double  blurringPerceptual(const cv::Mat &src)
     blur_index = cv::max((somaV - varV)/somaV,(somaH - varH)/somaH);
 
 	return blur_index;
-}
-
-double packetLossImpairments(const cv::Mat &src,cv::Mat &frameEDGES,double threshold1,double threshold2,double threshold3,double alpha,double beta, double *a,double *b,double *c,double *d)
-{
-//Nesta metrica sao considerados macroblocos de 16x16 pixels
-//beta=1 e alpha=1/255 e threshold1=90/255 ou 90 e threshold2 = 1 e threshold3 = 0.15
-
-    const int macro_blocks = src.rows*src.cols/256;
-    int edge_index;
-    double H_inter, H_intra, V_inter, V_intra;
-    double inter_avg = 0, weighted_inter_avg = 0, spatial_activity = 0, LCrms = 0;
-    *a = 0;
-    *b = 0;
-    *c = 0;
-    *d = 0;
-
-    //spatial activity measure(texture)
-    cv::Mat I1(src.rows,src.cols,CV_32FC1);
-    cv::Mat I2(src.rows,src.cols,CV_32FC1);
-
-    //filterHantaoH(src,I2);
-    //filterHantaoV(src,I1);
-    filterLawsH(src,I2,48);
-    filterLawsV(src,I1,48);
-
-/*
-    for(int i = 0; i < src.rows; i++){
-        for(int j = 0; j < src.cols; j++){
-            if(I1.at<double>(i,j) < 0) I1.at<double>(i,j) = -I1.at<double>(i,j); 
-            if(I2.at<double>(i,j) < 0) I2.at<double>(i,j) = -I2.at<double>(i,j);
-
-            if(I1.at<double>(i,j) + I2.at<double>(i,j) >= threshold3){
-                I1.at<double>(i,j) = I1.at<double>(i,j) + I2.at<double>(i,j);
-            }
-            else {
-                I1.at<double>(i,j) = 0;
-            }
-        }
-    }
-*/
-    //Contrast measure
-    cv::Mat C0(src.rows,src.cols,CV_32FC1);
-    localContrastRMS(src,C0,33);//Nao e possivel usar 32 nessa funcao
-
-    // inter/intra diference measure
-    for(int i = 0; i < src.rows; i+=16){
-        for(int j = 0; j < src.cols; j+=16){
-            double inter = 0 , intra = 0;            //inicializando variaveis
-            edge_index = 0;
-            H_inter = H_intra = V_inter = V_intra = 0;
-            //spatial_activity = LCrms = 0;
-
-
-            if(i > 0){//up border
-                for(int q = 0; q <= 15;q++){//Soma das diferncas ao longo da borda
-                   double pixel_inter,pixel_intra;
-
-                   if(src.at<uchar>(i,j+q) - src.at<uchar>(i-1,j+q) >= 0)    pixel_inter = src.at<uchar>(i,j+q) - src.at<uchar>(i-1,j+q);
-                   else    pixel_inter = -(src.at<uchar>(i,j+q) - src.at<uchar>(i-1,j+q));
-                   if(src.at<uchar>(i+1,j+q) - src.at<uchar>(i,j+q) >= 0)    pixel_intra = src.at<uchar>(i+1,j+q) - src.at<uchar>(i,j+q);
-                   else    pixel_intra = -(src.at<uchar>(i+1,j+q) - src.at<uchar>(i,j+q));
-               
-                  if( pixel_inter > threshold1 && (pixel_inter/pixel_intra) > threshold2){//Elimina diferencas fracas e bordas que pertencem a imagem
-                      inter += pixel_inter/16;
-                      intra += pixel_intra/16;
-                  } 
-	       }
-
-               H_inter += inter/16;
-               H_intra += intra/16;
-	       if(inter > 0.5*threshold1 && (inter/intra) > threshold2) edge_index++;
-           }
-
-           inter = intra = 0;
-           if(i + 15 < src.rows-1){//down border
-               for(int q = 0; q <= 15;q++){
-                   double pixel_inter,pixel_intra;
-
-                   if(src.at<uchar>(i+15,j+q) - src.at<uchar>(i+16,j+q) >= 0)    pixel_inter = src.at<uchar>(i+15,j+q) - src.at<uchar>(i+16,j+q);
-                   else    pixel_inter = -(src.at<uchar>(i+15,j+q) - src.at<uchar>(i+16,j+q));
-                   if(src.at<uchar>(i+15,j+q) - src.at<uchar>(i+14,j+q) >= 0)    pixel_intra = src.at<uchar>(i+15,j+q) - src.at<uchar>(i+14,j+q);
-                   else    pixel_intra = -(src.at<uchar>(i+15,j+q) - src.at<uchar>(i+14,j+q));
-               
-
-                  if(pixel_inter > threshold1 && (pixel_inter/pixel_intra) > threshold2){
-                      inter += pixel_inter/16;
-                      intra += pixel_intra/16;
-                  } 
-	       }
-
-               H_inter += inter/16;
-               H_intra += intra/16;
-	       if(inter > 0.5*threshold1 && (inter/intra) > threshold2) edge_index++;
-           }               
-
-           inter = intra = 0;
-           if(j > 0){//left border
-               for(int q = 0; q <= 15;q++){
-                   double pixel_inter,pixel_intra;
-
-                   if(src.at<uchar>(i+q,j) - src.at<uchar>(i+q,j-1) >= 0)    pixel_inter = src.at<uchar>(i+q,j) - src.at<uchar>(i+q,j-1);
-                   else    pixel_inter = -(src.at<uchar>(i+q,j) - src.at<uchar>(i+q,j-1));
-                   if(src.at<uchar>(i+q,j+1) - src.at<uchar>(i+q,j) >= 0)    pixel_intra = src.at<uchar>(i+q,j+1) - src.at<uchar>(i+q,j);
-                   else    pixel_intra = -(src.at<uchar>(i+q,j+1) - src.at<uchar>(i+q,j));
-               
-            
-                  if( pixel_inter > threshold1 && (pixel_inter/pixel_intra) > threshold2){
-                      inter += pixel_inter/16;
-                      intra += pixel_intra/16;
-                  } 
-	       }
-
-               V_inter += inter/16;
-               V_intra += intra/16;
-	       if(inter > 0.5*threshold1 && (inter/intra) > threshold2) edge_index++;
-           }   
-
-           inter = intra = 0;
-           if(j + 15 < src.cols-1){//right border 
-               for(int q = 0; q <= 15;q++){ 
-                   double pixel_inter,pixel_intra;
-
-                   if(src.at<uchar>(i+q,j+15) - src.at<uchar>(i+q,j+16) >= 0)    pixel_inter = src.at<uchar>(i+q,j+15) - src.at<uchar>(i+q,j+16); 
-                   else    pixel_inter = -(src.at<uchar>(i+q,j+15) - src.at<uchar>(i+q,j+16)); 
-                   if(src.at<uchar>(i+q,j+15) - src.at<uchar>(i+q,j+14) >= 0)    pixel_intra = src.at<uchar>(i+q,j+15) - src.at<uchar>(i+q,j+14);
-                   else    pixel_intra = -(src.at<uchar>(i+q,j+15) - src.at<uchar>(i+q,j+14));
-                
-                  if( pixel_inter > threshold1 && (pixel_inter/pixel_intra) > threshold2){
-                      inter += pixel_inter/16;
-                      intra += pixel_intra/16;
-                  } 
-	       }
-
-               V_inter += inter/16;
-               V_intra += intra/16;
-	       if(inter > 0.5*threshold1 && (inter/intra) > threshold2) edge_index++;
-           }  
-
-           if(edge_index >= 2){//eh considerado apenas macroblocos com duas ou mais bordas visiveis
-             inter_avg += (H_inter + V_inter)/macro_blocks;
-             *b += (H_intra + V_intra)/macro_blocks;
-             //inter_avg = (H_inter + V_inter);
-           }
-             for( int q = 0; q<= 15; q++){//Media do contraste e da textura para cada macrobloco
-                 for( int w = 0; w<=15; w++){
-                     if(I1.at<float>(i+q,j+w) < 0) I1.at<float>(i+q,j+w) = -I1.at<float>(i+q,j+w); 
-                     if(I2.at<float>(i+q,j+w) < 0) I2.at<float>(i+q,j+w) = -I2.at<float>(i+q,j+w);
-
-                     if(I1.at<float>(i+q,j+w) + I2.at<float>(i+q,j+w) >= threshold3){
-                         I1.at<float>(i+q,j+w) = I1.at<float>(i+q,j+w) + I2.at<float>(i+q,j+w);//Filtra o contraste apenas dos pixels usados
-                     }
-                     else {
-                         I1.at<uchar>(i+q,j+w) = 0;
-                     }
-//frameEDGES.at<uchar>(i+q,j+w) = 255;
-                     spatial_activity += I1.at<float>(i+q,j+w) / 256;
-                     LCrms += C0.at<float>(i+q,j+w) / 256;
-
-                }
-             }
-                //Armazena a inter diferenca ponderada pelo contraste e textura
-                //printf("LCrms %f\tSpatial %f\n",LCrms,spatial_activity);
-                //weighted_inter_avg += inter_avg / ((1 + alpha*spatial_activity)*(1 + beta*LCrms ) );
-           
-        }
-    }
-    spatial_activity /= macro_blocks;
-    LCrms /= macro_blocks;
-    
-    weighted_inter_avg = inter_avg / ((1 + alpha*spatial_activity)*(1 + beta*LCrms ) );
-    *a = inter_avg;
-    *c = spatial_activity;
-    *d = LCrms;
-    //weighted_inter_avg /= macro_blocks;
-    return weighted_inter_avg;
-}
-
-double packetLossHuaXiaRui(const cv::Mat & src)
-{
-    //Esse modelo considera tanto o tamanho como a forca como a degradacao da perda de pacote
-    //Foram usadas as nomenclaturas que estao na referencia
-    //Os macroblocos sao 16x16 pixels
-    int cm = src.rows/16, noise = 10, N0, N1;
-    const double normal = 1.5;
-    double dh_1, dh_2, dh_3, E1, E2, gamma, packet_loss_index = 0;
-    cv::Mat dh1 = cv::Mat::zeros(cm,1,CV_32FC1);
-    cv::Mat dh2 = cv::Mat::zeros(cm,1,CV_32FC1);
-    cv::Mat dh3 = cv::Mat::zeros(cm,1,CV_32FC1);
-
-    for(int i = 1; i < cm-1; i++){//As medidas comecam da segunda linha de macroblocos e vao ate a penultima
-        E1 = E2 = gamma = 0;//Inicializadores para cada linha de macrobloco
-        N0 = N1 = 0;
-        for(int j = 0; j < src.cols; j++){//Nao e considerado a primeira e ultima linha de macroblocos(0 e cm-1)
-            dh_1 = src.at<uchar>(i*16 - 1,j) - src.at<uchar>(i*16 - 2,j);//inter
-            dh_2 = src.at<uchar>(i*16,j) - src.at<uchar>(i*16 - 1,j);//intra
-            dh_3 = src.at<uchar>(i*16 + 1,j) - src.at<uchar>(i*16,j);//proximo macrobloco
-
-            if(dh_1 < 0) dh_1 = -dh_1;
-            if(dh_2 < 0) dh_2 = -dh_2;
-            if(dh_3 < 0) dh_3 = -dh_3;
-
-            dh1.at<double>(i,0) += dh_1/src.cols;
-            dh2.at<double>(i,0) += dh_2/src.cols;
-            dh3.at<double>(i,0) += dh_3/src.cols;
-
-            if(dh_2 > (normal * cv::max(dh_1,dh_3)) && dh_2 > noise){            
-                gamma += dh_2;//Soma da diferenca dos pixels DANIFICADOS entre rJ e rJ+1
-                N1++;//Numero de pixels danificados da linha
-            }
-            else{
-                E2 += dh_2;//Soma da diferenca dos pixels INTACTOS entre rJ e rJ+1
-                N0++;//Numero de pixels intactos da linha
-            }
-
-
-        }
-
-        if(dh2.at<double>(i,0) > (normal*cv::max(dh1.at<double>(i,0), dh3.at<double>(i,0))) && dh2.at<double>(i,0) > noise){
-            E1 = dh1.at<double>(i,0);//Media da diferenca entre rJ e rJ-1
-            packet_loss_index += (E2 + gamma - src.cols*E1) / (src.cols*E1);
-        }
-    }
-
-    packet_loss_index *= 1000/(cm - 2);//Media de todas as linhas de macroblocos
-
-    return packet_loss_index;
-}
-
-double packetLossBabu(const cv::Mat & src)
-{
-    const double threshold1 = 15, threshold2 = src.cols/10;
-    double difference, edge_index, packet_loss_index;
-    double inter_edge[3],intra_edge[3];
-
-    packet_loss_index = 0;
-    for(int i = 15;i <= (src.rows-1) - 16; i+=16){
-        edge_index = 0;
-        for(int j = 0;j < src.cols;j++){//computa a forca da borda entre macroblocos adjacentes e internamente, ponto por ponto.
-            if(j == 0){
-                inter_edge[0] = 0;
-                intra_edge[0] = 0;
-            }
-            else {
-                inter_edge[0] =  src.at<uchar>(i-1,j-1) - src.at<uchar>(i+1,j-1);
-                intra_edge[0] = src.at<uchar>(i-2,j-1) - src.at<uchar>(i,j-1);
-                if(inter_edge[0] < 0) inter_edge[0] = -inter_edge[0];
-                if(intra_edge[0] < 0) intra_edge[0] = -intra_edge[0];
-            }
-            //no array 1 fica o pixel analisado no loop
-            inter_edge[1] = src.at<uchar>(i-1,j) - src.at<uchar>(i+1,j);
-            intra_edge[1] = src.at<uchar>(i-2,j) - src.at<uchar>(i,j);
-            if(inter_edge[1] < 0) inter_edge[1] = -inter_edge[1];
-            if(intra_edge[1] < 0) intra_edge[1] = -intra_edge[1];
-
-            if(j == src.cols - 1){
-                inter_edge[2] = 0;
-                intra_edge[2] = 0;
-            }
-            else {
-                inter_edge[2] =  src.at<uchar>(i-1,j+1) - src.at<uchar>(i+1,j+1);
-                intra_edge[2] = src.at<uchar>(i-2,j+1) - src.at<uchar>(i,j+1);
-                if(inter_edge[2] < 0) inter_edge[2] = -inter_edge[2];
-                if(intra_edge[2] < 0) intra_edge[2] = -intra_edge[2];
-            }
-
-            //Low-Pass [1 1 1]/3
-            inter_edge[1] = (inter_edge[0] + inter_edge[1] + inter_edge[2]) / 3;
-            intra_edge[1] = (intra_edge[0] + intra_edge[1] + intra_edge[2]) / 3;            
-
-            //cria as "edge maps" das linhas adjacentes
-            if(inter_edge[1] <= threshold1) inter_edge[1] = 0;
-            else    inter_edge[1] = 1;
-            if(intra_edge[1] <= threshold1) intra_edge[1] = 0;
-            else    intra_edge[1] = 1;
-
-            //Quando as diferencas das bordas inter e intra sao ambas baixas ou altas nao e considerado como possivel perda de pacote(difference fica com valor 0)
-            difference = inter_edge[1] - intra_edge[1];
-            if(difference < 0) difference = -difference;
- 
-            edge_index += difference;
-        }
-
-        if(edge_index > threshold2) packet_loss_index += pow(edge_index/src.cols, 2);
-
-    }
-    return packet_loss_index;
 }
 
 double ringing1Farias(const cv::Mat &src)

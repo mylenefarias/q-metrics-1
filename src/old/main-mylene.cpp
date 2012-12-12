@@ -73,21 +73,9 @@ int main(int argc, char *argv[])
                 loadedFile.degradeFrame(frame_atual, deg);
         }
     }else if(mode == "degrade"){
-        int videonumber = atoi(argv[6]); // 1o argumento -- numero de videos
-		std::string output1(argv[7]);    // 2o argumento -- nome do video de saida
-		string deg(argv[8]);             // 3o argumento -- tipo de degradacao
-
-		std::string output;
-        int number = 1;
-		char numstr[21];
-
-        for (number = 1;number <= videonumber; ++number){
-			sprintf(numstr, "%d.yuv", number);
-			output = output1 + numstr;
-			loadedFile.degradeVideo(output, deg);
-			if(number!=videonumber)
-				Loader loadedFile(output,sx,sy,yuv);
-		}
+        string output(argv[6]); // 1o argumento -- nome do video de saida
+	string deg(argv[7]);        // tipo de degradacao
+        loadedFile.degradeVideo(output, deg);
     }else{
         printf("Invalid Option \n");
         PrintHelp();
@@ -105,7 +93,7 @@ void PrintHelp()
            "\t predict: predict a MOS using codebook \n"
            "\t video: show the video \n"
            "\t metrics: call the metrics \n"
-           "\t degrade: generate n videos with defects \n"
+           "\t degrade: generate a video with defects \n"
            "file: path to the .yuv file \n"
            "width: width of the video \n"
            "height: height of the video \n"

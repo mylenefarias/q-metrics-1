@@ -30,32 +30,23 @@
 #include "mat.hpp"
 #include "img.hpp"
 
-/// Resume a feature de saida para um escalar
 enum    OutputOptions{
     OUT_AVERAGE,
     OUT_MEDIAN
 };
 
-/// Escolher o detector de bordas apropriado
 enum    BlurWinklerOptions{
     BW_EDGE_CANNY,
     BW_EDGE_SOBEL,
-    BW_EDGE_SCHARR,
-    BW_EDGE_BILATERAL
+    BW_EDGE_SCHARR
 };
 
-/// (ref.: Detection of blocking artifacts in compressed video)
+
 double  blockingVlachos(const cv::Mat &src);
-/// (ref.: No-Reference perceptual quality assessment of jpeg compressed)
-/// Implementacao em MATLAB:
-/// https://ece.uwaterloo.ca/~z70wang/research/nr_jpeg_quality/jpeg_quality_score.m
 double  blockingWang(const cv::Mat & src);
-/// (ref.: A Simplified Human Vision Model)
 double  blockingLiuHeynderickx(const cv::Mat & src);
-/// (ref.: A NO-REFERENCE BLOCKING ARTIFACTS VISIBILITY ESTIMATOR IN IMAGES )
 double  blockingYammineWigeKaup(const cv::Mat & src);
 
-/// (ref.: Perceptual blur and ringing metrics: Application to JPEG2000)
 double  blurringWinkler(const cv::Mat &src,
                         BlurWinklerOptions options = BW_EDGE_CANNY,
                         double threshold1 = 10,
@@ -76,24 +67,6 @@ double  blurringCPBD(const cv::Mat & src,
 double  blurringPerceptual(const cv::Mat & src);
 
 double  packetLoss(const cv::Mat &src);
-/// (ref.: PERCEPTUAL NO-REFERENCE PACKET-LOSS METRIC)
-double packetLossImpairments(const cv::Mat &src,cv::Mat &frameEDGES,double threshold1,double threshold2,
-                             double threshold3,double alpha,double beta, double *a,double *b,double *c,double *d);
-/// (ref.: Evaluation of packet loss impairment on streaming video)
-double packetLossHuaXiaRui(const cv::Mat & src);
-/// (ref.: NO-REFERENCE METRICS FOR VIDEO STREAMING APPLICATIONS)
-double packetLossBabu(const cv::Mat & src);
-
-/// (ref.: No-Reference and Reduced Reference Video Quality Metrics: New Contributions)
-double  ringing1Farias(const cv::Mat &src);
-double  ringing2Farias(const cv::Mat &src,
-                       BlurWinklerOptions options = BW_EDGE_CANNY,
-                       double threshold1 = 10,
-                       double threshold2 = 200,
-                       int aperture_size = 3,
-                       int oscillation_threshold = 15);
-double  noise1Farias(const cv::Mat &src);
-double  noise2Farias(const cv::Mat &src, double algorithm_resolution = 0.001);
 
 double contrastMean(const cv::Mat &src);
 double contrastMichelson(const cv::Mat & src);

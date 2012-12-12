@@ -90,13 +90,6 @@ void Loader::degradeFrame(int i, std::string deg)
     else if   (deg == "noise") {
 	  noiseWhiteFrame(frame,0,110);
     }
-    else if   (deg == "blockandblur") {
-		cv::Mat frame_block = frame.clone();
-		cv::Mat frame_blur = frame.clone();
-		blockingFrame(frame_block);
-		blurringFrame(frame_blur);
-		cv::addWeighted(frame_block, 0.5, frame_blur, 0.5, 0, frame);
-    }
     degrade_iteration += 1;
 }
 
@@ -107,7 +100,7 @@ void Loader::degradeVideo(string degradedName, std::string deg)
 {
     // files of degraded and original videos
     FILE * f_degraded;
-    FILE * f_original = 0;
+    FILE * f_original;
     // open file for degraded video
     f_degraded = fopen(degradedName.c_str(),"w");
 
@@ -183,17 +176,6 @@ void Loader::callDebug(int i)
     return;
 }
 
-void Loader::callDebug2(int i)
-{
-
-   cv::Mat frame = frameY.at(i);
-   cv::Mat packetloss = pckerr.at(i);
-
-   cv::imshow("FRAME",frame);
-   cv::imshow("PACKETERR",packetloss);
-   return;
-}
-
 void    Loader::writeCodebook(string fCodebook,float DMOS,int frames_in_word,int word_sizeX,int word_sizeY)
 {
     FILE * codebook;
@@ -242,7 +224,6 @@ void    Loader::writeCodebook(string fCodebook,float DMOS,int frames_in_word,int
 
 double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_sizeX,int word_sizeY){
 
-	std::string rfscanf = 0;
     FILE * codebook;
     codebook = fopen(fCodebook.c_str(),"r");
 
@@ -270,13 +251,13 @@ double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_s
     /// Faz a leitura do arquivo codebook para o algoritmo de K-Nearest Neighbors
     for(int i = 0,f = 0; i < number_training_vectors; ++i,f+=number_features){
 
-        rfscanf = fscanf(codebook,
-				  "%f;%f;%f;%f;%f\n",
-				  &output_vectors[i],
-				  &feature_vectors[f],    /// blocking
-				  &feature_vectors[f+1],  /// blurring
-				  &feature_vectors[f+2],  /// contrast
-				  &feature_vectors[f+3]); /// texture
+        fscanf(codebook,
+               "%f;%f;%f;%f;%f\n",
+               &output_vectors[i],
+               &feature_vectors[f],    /// blocking
+               &feature_vectors[f+1],  /// blurring
+               &feature_vectors[f+2],  /// contrast
+               &feature_vectors[f+3]); /// texture
     }
 
     cv::Mat trainData(number_training_vectors,number_features,CV_32FC1,feature_vectors);
@@ -407,143 +388,57 @@ void   Loader::printFeatures(string fFeatures,int frames_in_word,int word_sizeX,
 }
 
 void   Loader::callMetrics() {
-    double avg_blur[4] = {0,0,0,0},min_blur[4] = {1000,1000,1000,1000},max_blur[4] = {-1,-1,-1,-1};
-    double avg_block[2] = {0,0},min_block[2] = {1000,1000},max_block[2] = {-1,-1};
-    double avg_packet[3] = {0,0,0},min_packet[3] = {1000,1000,1000},max_packet[3] = {-1,-1,-1};
-    //FILE  *f_output; 
-    FILE  *f_avg,*f_param;
-    string name = fName.substr(0,fName.size() - 4);
+	double avg_blur[4] = {0,0,0,0},min_blur[4] = {1000,1000,1000,1000},max_blur[4] = {-1,-1,-1,-1};
+	FILE * f_output;
+	string name = fName.substr(0,fName.size() - 4);
 
-    name += ".txt";
-    //f_output = fopen(name.c_str() ,"w");//Onde fica os resultados ppar cada frame do video
-    f_avg = fopen("Avg_values.txt" , "r+");//Onde fica a media dos resultados para todos os videos testados
-    if(f_avg == NULL){
-      f_avg = fopen("Avg_values.txt" , "w");
-      fprintf(f_avg,"Video Name"
-                    "\tWinkler"
-		    "\t\tWinkler2"
-		    "\tCPBD"
-		    "\t\tPerceptual"
-                    "\tWang"
-                    "\t\tVlachos"
-                    "\t\tImpairments"
-                    "\tXiaRui"
-                    "\t\tBabu"
-                     "\n");
-    }
-    fseek(f_avg,0,2);
+	name += ".txt";
+    f_output = fopen(name.c_str() ,"w");
 
-
-    f_param = fopen("Parametros.txt" , "r+");
-    if(f_param == NULL){
-      f_param = fopen("Parametros.txt" , "w");
-      fprintf(f_avg,"Video Name"
-                    "\tInter"
-		    "\t\tIntra"
-		    "\tSpatial Act"
-		    "\t\tContrast"
-                     "\n");
-    }
-    fseek(f_param,0,2);
-
-/*
     fprintf(f_output,"Frame"
-                    "\tWinkler"
-		    "\t\tWinkler2"
-		    "\tCPBD"
-		    "\t\tPerceptual"
-                    "\tWang"
-                    "\t\tVlachos"
-                    "\t\tImpairments"
-                    "\tXiaRui"
-                    "\t\tBabu"
-                    "\n");
-*/
-        cv::Mat frameE(sizeX,sizeY,CV_8UC1);
-
-        double inter=0,intra=0,spatial=0,contrast=0;
-	for(int frame_nr=0; frame_nr< total_frame_nr; ++frame_nr){//Realiza as metricas em cada frame 
-                double a,b,c,d;
-                //frameE = cv::Mat::zeros(sizeY,sizeX,CV_8UC1);
-                //cv::Mat frameE = cv::Mat::zeros(sizeY,sizeX,CV_8UC1);
-
-		double blur0 = 0.000;//blurringWinkler(frameY.at(frame_nr), BW_EDGE_CANNY, 10, 200, 3);
-		double blur1 = 0.000;//blurringWinklerV2(frameY.at(frame_nr), BW_EDGE_CANNY, 10, 200, 3);
-		double blur2 = 0.000;//blurringCPBD(frameY.at(frame_nr), BW_EDGE_CANNY, 10, 200, 3);
-		double blur3 = 0.000;//blurringPerceptual(frameY.at(frame_nr));
-		double block0 = 0.000;//blockingWang(frameY.at(frame_nr));
-		double block1 = 0.000;//blockingVlachos(frameY.at(frame_nr));
-                double packet0 = packetLossImpairments(frameY.at(frame_nr),frameE,50/*35*/, 1, 0.15, (1/255) , 1, &a,&b,&c,&d);
-                double packet1 = 0.000;//packetLossHuaXiaRui(frameY.at(frame_nr));            para folhas talvez tenha que mudar o 1.35
-                double packet2 = 0.000;//packetLossBabu(frameY.at(frame_nr));
-
-		//fprintf(f_output,"%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
-                //        frame_nr, blur0, blur1, blur2, blur3, block0, block1, packet0, packet1, packet2);
-
-                //adiciona matrix com as intensidade das perdas de pacote
-                //pckerr.push_back(frameE.clone());
-
-                //medias do packetLossImpairments()
-                inter += a/total_frame_nr;
-                intra += b/total_frame_nr;
-                spatial += c/total_frame_nr;
-                contrast += d/total_frame_nr;
+                     "\t"
+                    "Winkler"
+					"\t\t"
+					"Winkler2"
+					"\t"
+					"CPBD"
+					"\t\t"
+					"Perceptual"
+                     "\n");
 
 
-                //Borragem
-		avg_blur[0] += blur0/total_frame_nr;
+	for(int frame_nr=0; frame_nr< total_frame_nr; ++frame_nr){
+		double blur0 = blurringWinkler(frameY.at(frame_nr), BW_EDGE_CANNY, 10, 200, 3);
+		double blur1 = blurringWinklerV2(frameY.at(frame_nr), BW_EDGE_CANNY, 10, 200, 3);
+		double blur2 = blurringCPBD(frameY.at(frame_nr), BW_EDGE_CANNY, 10, 200, 3);
+		double blur3 = blurringPerceptual(frameY.at(frame_nr));
+
+		fprintf(f_output,"%d\t%f\t%f\t%f\t%f\n",frame_nr,blur0,blur1,blur2,blur3);
+
+		avg_blur[0] += blur0;
 		if( blur0 < min_blur[0])	min_blur[0] = blur0;
 		else if(blur0 > max_blur[0])	max_blur[0] = blur0;
-		avg_blur[1] += blur1/total_frame_nr;
+		avg_blur[1] += blur1;
 		if( blur1 < min_blur[1])	min_blur[1] = blur1;
 		else if(blur1 > max_blur[1])	max_blur[1] = blur1;
-		avg_blur[2] += blur2/total_frame_nr;
+		avg_blur[2] += blur2;
 		if( blur2 < min_blur[2])	min_blur[2] = blur2;
 		else if(blur2 > max_blur[2])	max_blur[2] = blur2;
-		avg_blur[3] += blur3/total_frame_nr;
+		avg_blur[3] += blur3;
 		if( blur3 < min_blur[3])	min_blur[3] = blur3;
 		else if(blur3 > max_blur[3])	max_blur[3] = blur3;
-                //Blocagem
-		avg_block[0] += block0/total_frame_nr;
-		if( block0 < min_block[0])	min_block[0] = block0;
-		else if(block0 > max_block[0])	max_block[0] = block0;
-		avg_block[1] += block1/total_frame_nr;
-		if( block1 < min_block[1])	min_block[1] = block1;
-		else if(block1 > max_block[1])	max_block[1] = block1;
-                //Perda de Pacote
-		avg_packet[0] += packet0/total_frame_nr;
-		if( packet0 < min_packet[0])    min_packet[0] = packet0;
-		else if(packet0 > max_packet[0])    max_packet[0] = packet0;
-		avg_packet[1] += packet1/total_frame_nr;
-		if( packet1 < min_packet[1])	min_packet[1] = packet1;
-		else if(packet1 > max_packet[1])    max_packet[1] = packet1;
-		avg_packet[2] += packet2/total_frame_nr;
-		if( packet2 < min_packet[2])	min_packet[2] = packet2;
-		else if(packet2 > max_packet[2])    max_packet[2] = packet2;
+
 
 	}
-/*
 	fprintf(f_output,"\nAvg =\t"
-                     "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f"
+                    	 "%f\t%f\t%f\t%f"
                    	 "\nMax =\t"
-                     "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f"
-                     "\nMin =\t"
-                     "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f"
-                     "\n", avg_blur[0], avg_blur[1], avg_blur[2], avg_blur[3], avg_block[0], avg_block[1], avg_packet[0], avg_packet[1], avg_packet[2],
-                           max_blur[0], max_blur[1], max_blur[2], max_blur[3], max_block[0], max_block[1], max_packet[0], max_packet[1], max_packet[2],
-                           min_blur[0], min_blur[1], min_blur[2], min_blur[3], min_block[0], min_block[1], min_packet[0], min_packet[1], min_packet[2]);
-*/
-        fprintf(f_avg,"%s\t"
-                      "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",fName.c_str(), avg_blur[0], avg_blur[1], avg_blur[2], avg_blur[3],
-                                                             avg_block[0], avg_block[1], avg_packet[0], avg_packet[1], avg_packet[2]);
+                     	 "%f\t%f\t%f\t%f"
+                     	 "\nMin =\t"
+                     	 "%f\t%f\t%f\t%f"
+                     	 "\n",avg_blur[0]/total_frame_nr,avg_blur[1]/total_frame_nr,avg_blur[2]/total_frame_nr,avg_blur[3]/total_frame_nr, max_blur[0], max_blur[1], max_blur[2], max_blur[3], min_blur[0], min_blur[1], min_blur[2], min_blur[3]);
 
-
-        fprintf(f_param,"%s\t"
-                        "%f\t%f\t%f\t%f\n",fName.c_str(),inter,intra,spatial,contrast);
-                 	 
-  //fclose(f_output);
-  fclose(f_avg);
-  fclose(f_param);
+	fclose(f_output);
 }
 
 void   Loader::callMetrics2(float DMOS) {
@@ -588,10 +483,8 @@ double   Loader::pool_frame(vector<double> v)
 
 int  Loader::count_lines(FILE * codebook)
 {
-    int enter = fscanf(codebook,"%*[^\n]");
-    int carac = fscanf(codebook,"%*c");
     int lines = 0;
-    while (EOF != enter && EOF != carac)
+    while (EOF != (fscanf(codebook,"%*[^\n]"), fscanf(codebook,"%*c")))
         ++lines;
     rewind(codebook);
     return lines;

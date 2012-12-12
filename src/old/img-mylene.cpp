@@ -198,9 +198,6 @@ void windowHamming(const cv::Mat & src,cv::Mat & dest)
 
 void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r)
 {
-    cv::Mat source(src.rows,src.cols,CV_32FC1);
-    src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
-
     conv2D(src,dest,(cv::Mat_<float>(5,5) <<
                      1/r,2/r ,0,-2/r ,-1/r,
                      4/r,8/r ,0,-8/r ,-4/r,
@@ -213,9 +210,6 @@ void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r)
 
 void filterLawsV(const cv::Mat & src,cv::Mat & dest,float r)
 {
-    cv::Mat source(src.rows,src.cols,CV_32FC1);
-    src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
-
     conv2D(src,dest,(cv::Mat_<float>(5,5) <<
                      1/r, 4/r,  6/r, 4/r, 1/r,
                      2/r, 8/r, 12/r, 8/r, 2/r,
@@ -225,31 +219,25 @@ void filterLawsV(const cv::Mat & src,cv::Mat & dest,float r)
     return ;
 }
 
-void filterHantaoH(const cv::Mat & src,cv::Mat & dest, float r)
+void filterHantaoH(const cv::Mat & src,cv::Mat & dest)
 {
-    cv::Mat source(src.rows,src.cols,CV_32FC1);
-    src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
-
-	conv2D(src,dest,(cv::Mat_<float>(5,5) <<
-                     1/r,1/r,0,1/r,1/r,
-                     1/r,2/r,0,2/r,1/r,
-                     1/r,2/r,0,2/r,1/r,
-                     1/r,2/r,0,2/r,1/r,
-                     1/r,1/r,0,1/r,1/r));
-	return ;
+    conv2D(src,dest,(cv::Mat_<float>(5,5) <<
+                     1,1,0,1,1,
+                     1,2,0,2,1,
+                     1,2,0,2,1,
+                     1,2,0,2,1,
+                     1,1,0,1,1));
+    return ;
 }
 
-void filterHantaoV(const cv::Mat & src,cv::Mat & dest, float r)
+void filterHantaoV(const cv::Mat & src,cv::Mat & dest)
 {
-    cv::Mat source(src.rows,src.cols,CV_32FC1);
-    src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
-
     conv2D(src,dest,(cv::Mat_<float>(5,5) <<
-                     1/r,1/r,1/r,1/r,1/r,
-                     1/r,2/r,2/r,2/r,1/r,
+                     1,1,1,1,1,
+                     1,2,2,2,1,
                      0,0,0,0,0,
-                     1/r,2/r,2/r,2/r,1/r,
-                     1/r,1/r,1/r,1/r,1/r));
+                     1,2,2,2,1,
+                     1,1,1,1,1));
     return ;
 }
 
@@ -328,31 +316,6 @@ void analysisContrast(const cv::Mat & src,cv::Mat & dest)
             cv::meanStdDev(block_ij,mean,std);
 
             dest.at<float>(i,j) = std[0]/mean[0];
-        }
-    }
-
-    return ;
-}
-
-void localContrastRMS( const cv::Mat &src,cv::Mat &dest, const int stdev)
-{
-    double std_deviation, mean;
-    cv::Mat mean_local(src.rows,src.cols,CV_32FC1);
-    cv::Mat mean_sq(src.rows,src.cols,CV_32FC1);
-    cv::Mat source(src.rows,src.cols,CV_32FC1);
-    src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
-
-    mean_sq = source.mul(source);//Gera uma matriz com os valores de src ao quadrado
-
-    cv::GaussianBlur(source,mean_local,cv::Size(stdev,stdev),0,0);
-    cv::GaussianBlur(mean_sq,mean_sq,cv::Size(stdev,stdev),0,0);
-
-    for(int i = 0;i < src.rows; i++){
-        for(int j = 0; j < src.cols; j++){
-            mean = mean_local.at<float>(i,j);
-
-            std_deviation = sqrt(mean_sq.at<float>(i,j) - (mean * mean));
-            dest.at<float>(i,j) = std_deviation / mean;
         }
     }
 

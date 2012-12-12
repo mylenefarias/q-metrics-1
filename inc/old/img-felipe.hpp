@@ -82,8 +82,8 @@ void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r=48.0);
 */
 void filterLawsV(const cv::Mat &src,cv::Mat & dest,float r=48.0);
 
-void filterHantaoH(const cv::Mat &src,cv::Mat & dest,float r=1.0);
-void filterHantaoV(const cv::Mat &src,cv::Mat & dest,float r=1.0);
+void filterHantaoH(const cv::Mat &src,cv::Mat & dest);
+void filterHantaoV(const cv::Mat &src,cv::Mat & dest);
 void analysisTexture(const cv::Mat & src,cv::Mat & dest);
 void analysisContrast(const cv::Mat &src,cv::Mat & dest);
 

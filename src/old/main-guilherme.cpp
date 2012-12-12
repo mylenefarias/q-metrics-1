@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     int  sx     = atoi(argv[3]);  /// Numero de colunas
     int  sy     = atoi(argv[4]);  /// Numero de linhas
     int  yuv    = atoi(argv[5]);  /// Tipo do arquivo .yuv - Ver definicoes em global.h
-    string deg = "block"; 
+
     Loader loadedFile(fN,sx,sy,yuv);
 
     if(mode == "train"){
@@ -70,24 +70,23 @@ int main(int argc, char *argv[])
             if(((char)c==108) && (frame_atual < (total_frames-1))) /// Tecla 'l'
                 frame_atual++;
             if(((char)c==106))                                     /// Tecla 'j'
-                loadedFile.degradeFrame(frame_atual, deg);
+                loadedFile.degradeFrame(frame_atual);
         }
     }else if(mode == "degrade"){
-        int videonumber = atoi(argv[6]); // 1o argumento -- numero de videos
-		std::string output1(argv[7]);    // 2o argumento -- nome do video de saida
-		string deg(argv[8]);             // 3o argumento -- tipo de degradacao
-
-		std::string output;
         int number = 1;
+        int videonumber = atoi(argv[6]);
 		char numstr[21];
+		std::string output1(argv[7]);
+		std::string output;
 
         for (number = 1;number <= videonumber; ++number){
 			sprintf(numstr, "%d.yuv", number);
 			output = output1 + numstr;
-			loadedFile.degradeVideo(output, deg);
+			loadedFile.degradeVideo(output);
 			if(number!=videonumber)
 				Loader loadedFile(output,sx,sy,yuv);
 		}
+
     }else{
         printf("Invalid Option \n");
         PrintHelp();
@@ -105,7 +104,7 @@ void PrintHelp()
            "\t predict: predict a MOS using codebook \n"
            "\t video: show the video \n"
            "\t metrics: call the metrics \n"
-           "\t degrade: generate n videos with defects \n"
+           "\t degrade: generate a video with defects \n"
            "file: path to the .yuv file \n"
            "width: width of the video \n"
            "height: height of the video \n"

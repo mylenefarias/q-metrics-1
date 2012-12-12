@@ -201,7 +201,7 @@ void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r)
     cv::Mat source(src.rows,src.cols,CV_32FC1);
     src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
 
-    conv2D(src,dest,(cv::Mat_<float>(5,5) <<
+    conv2D(source,dest,(cv::Mat_<float>(5,5) <<
                      1/r,2/r ,0,-2/r ,-1/r,
                      4/r,8/r ,0,-8/r ,-4/r,
                      6/r,12/r,0,-12/r,-6/r,
@@ -216,7 +216,7 @@ void filterLawsV(const cv::Mat & src,cv::Mat & dest,float r)
     cv::Mat source(src.rows,src.cols,CV_32FC1);
     src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
 
-    conv2D(src,dest,(cv::Mat_<float>(5,5) <<
+    conv2D(source,dest,(cv::Mat_<float>(5,5) <<
                      1/r, 4/r,  6/r, 4/r, 1/r,
                      2/r, 8/r, 12/r, 8/r, 2/r,
                      0  , 0  ,  0  , 0  , 0  ,
@@ -225,31 +225,31 @@ void filterLawsV(const cv::Mat & src,cv::Mat & dest,float r)
     return ;
 }
 
-void filterHantaoH(const cv::Mat & src,cv::Mat & dest, float r)
+void filterHantaoH(const cv::Mat & src,cv::Mat & dest)
 {
     cv::Mat source(src.rows,src.cols,CV_32FC1);
     src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
 
-	conv2D(src,dest,(cv::Mat_<float>(5,5) <<
-                     1/r,1/r,0,1/r,1/r,
-                     1/r,2/r,0,2/r,1/r,
-                     1/r,2/r,0,2/r,1/r,
-                     1/r,2/r,0,2/r,1/r,
-                     1/r,1/r,0,1/r,1/r));
-	return ;
+    conv2D(source,dest,(cv::Mat_<float>(5,5) <<
+                     1,1,0,1,1,
+                     1,2,0,2,1,
+                     1,2,0,2,1,
+                     1,2,0,2,1,
+                     1,1,0,1,1));
+    return ;
 }
 
-void filterHantaoV(const cv::Mat & src,cv::Mat & dest, float r)
+void filterHantaoV(const cv::Mat & src,cv::Mat & dest)
 {
     cv::Mat source(src.rows,src.cols,CV_32FC1);
     src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
 
-    conv2D(src,dest,(cv::Mat_<float>(5,5) <<
-                     1/r,1/r,1/r,1/r,1/r,
-                     1/r,2/r,2/r,2/r,1/r,
+    conv2D(source,dest,(cv::Mat_<float>(5,5) <<
+                     1,1,1,1,1,
+                     1,2,2,2,1,
                      0,0,0,0,0,
-                     1/r,2/r,2/r,2/r,1/r,
-                     1/r,1/r,1/r,1/r,1/r));
+                     1,2,2,2,1,
+                     1,1,1,1,1));
     return ;
 }
 

@@ -25,14 +25,14 @@ void blockingFrame(cv::Mat & src, int borderType)
             inner_mean = cv::mean(inner_block);
             outer_mean = cv::mean(outer_block);
 
-            ROI = ROI + abs((int)(inner_mean[0] - outer_mean[0]));
+            ROI = ROI + abs(2*(int)(inner_mean[0] - outer_mean[0]));
         }
     }
 }
 
 void blurringFrame(cv::Mat & src)
 {
-    cv::medianBlur(src,src,5);
+    cv::medianBlur(src,src,7);
 }
 
 void ringingFrame(cv::Mat & src, double echo_amplitude, RingingEchoDisplacement echo_displacement)

@@ -196,12 +196,9 @@ void windowHamming(const cv::Mat & src,cv::Mat & dest)
     }
 }
 
-void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r)
+void filterLawsH(const cv::Mat &src,cv::Mat & dest,double r)
 {
-    cv::Mat source(src.rows,src.cols,CV_32FC1);
-    src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
-
-    conv2D(src,dest,(cv::Mat_<float>(5,5) <<
+    conv2D(src,dest,(cv::Mat_<double>(5,5) <<
                      1/r,2/r ,0,-2/r ,-1/r,
                      4/r,8/r ,0,-8/r ,-4/r,
                      6/r,12/r,0,-12/r,-6/r,
@@ -211,12 +208,9 @@ void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r)
 }
 
 
-void filterLawsV(const cv::Mat & src,cv::Mat & dest,float r)
+void filterLawsV(const cv::Mat & src,cv::Mat & dest,double r)
 {
-    cv::Mat source(src.rows,src.cols,CV_32FC1);
-    src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
-
-    conv2D(src,dest,(cv::Mat_<float>(5,5) <<
+    conv2D(src,dest,(cv::Mat_<double>(5,5) <<
                      1/r, 4/r,  6/r, 4/r, 1/r,
                      2/r, 8/r, 12/r, 8/r, 2/r,
                      0  , 0  ,  0  , 0  , 0  ,
@@ -225,26 +219,20 @@ void filterLawsV(const cv::Mat & src,cv::Mat & dest,float r)
     return ;
 }
 
-void filterHantaoH(const cv::Mat & src,cv::Mat & dest, float r)
+void filterHantaoH(const cv::Mat & src,cv::Mat & dest, double r)
 {
-    cv::Mat source(src.rows,src.cols,CV_32FC1);
-    src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
-
-	conv2D(src,dest,(cv::Mat_<float>(5,5) <<
+    conv2D(src,dest,(cv::Mat_<double>(5,5) <<
                      1/r,1/r,0,1/r,1/r,
                      1/r,2/r,0,2/r,1/r,
                      1/r,2/r,0,2/r,1/r,
                      1/r,2/r,0,2/r,1/r,
                      1/r,1/r,0,1/r,1/r));
-	return ;
+    return ;
 }
 
-void filterHantaoV(const cv::Mat & src,cv::Mat & dest, float r)
+void filterHantaoV(const cv::Mat & src,cv::Mat & dest, double r)
 {
-    cv::Mat source(src.rows,src.cols,CV_32FC1);
-    src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
-
-    conv2D(src,dest,(cv::Mat_<float>(5,5) <<
+    conv2D(src,dest,(cv::Mat_<double>(5,5) <<
                      1/r,1/r,1/r,1/r,1/r,
                      1/r,2/r,2/r,2/r,1/r,
                      0,0,0,0,0,
@@ -253,27 +241,131 @@ void filterHantaoV(const cv::Mat & src,cv::Mat & dest, float r)
     return ;
 }
 
-/// Não é desejado utilizar essa funcao in-place - adequar um const no src
-void analysisTexture(const cv::Mat & src,cv::Mat & dest)
+void analysisTexture(const cv::Mat & src,cv::Mat & dest, int flag)
 {
-    cv::Mat t1(src.rows,src.cols,src.type());
-    cv::Mat t2(src.rows,src.cols,src.type());
+	double c;
+    cv::Mat t(src.rows,src.cols,src.type());
 
-    /// O padrão do OpenCV já faz padding simétrico (cv::BORDER_DEFAULT = cv::BORDER_REFLECT_101)
-    filterLawsH(src,t1);
-    filterLawsV(src,t2);
-
-    t1 = cv::abs(t1);
-    t2 = cv::abs(t2);
-
-    for(int i = 0; i < src.rows; ++i)
-        for(int j = 0; j < src.cols; ++j)
-            if((t1.at<uchar>(i,j) > 0.15) || (t2.at<uchar>(i,j) > 0.15))
-                dest.at<uchar>(i,j) = t1.at<uchar>(i+5,j+5) + t2.at<uchar>(i+5,j+5);
-
+	///Flag para verificar se é horizontal ou vertical, usando o filtro de acordo.
+	/// O filtro está descrito acima. Hugo já havia feito.
+	if(flag==0)
+		filterLawsH(src,t, 48.0);
+    else
+		filterLawsV(src,t, 48.0);
+	
+	/// Calculo da intensidade de textura, como descrito no artigo
+	/// Se for menor que o threshold, será zero. Senão, será a soma dos pixels do bloco feito pelo filtro.
+    for(int i = 0; i <= src.rows; ++i){
+        for(int j = 0; j <= src.cols; ++j){
+			c = t.at<double>(i,j);
+			///Zerando as bordas
+			if((i<3) || (j<3) || (i>(src.rows-3)) || (j>(src.cols-3)))
+				dest.at<double>(i,j) = 0.0;
+			else{
+				if(c > 0.15)
+					dest.at<double>(i,j) = t.at<double>(i,j);
+				else
+					dest.at<double>(i,j) = 0.0;				
+			}
+		}
+	}
+	t.release();
     return ;
 }
 
+void analysisLuminance(const cv::Mat & src,cv::Mat & dest, int flag)
+{
+    cv::Mat l(src.rows,src.cols,src.type());
+	
+	/// Flag para verificar se é horizontal ou vertical, usando o filtro de acordo. 
+	/// O filtro está descrito acima. Hugo já havia feito.
+	if(flag==0)
+		filterHantaoH(src,l, 26.0);
+	else
+		filterHantaoV(src,l, 26.0);
+
+
+	/// Calculo da intensidade de luminância, como descrito no artigo
+	/// Sempre será a soma dos pixels do bloco feito pelo filtro acima.
+    for(int i = 0; i <= src.rows; ++i){
+        for(int j = 0; j <= src.cols; ++j){
+			/// Zerando as bordas
+			if((i<3) || (j<3) || (i>(src.rows-3)) || (j>(src.cols-3)))
+				dest.at<double>(i,j) = 0.0;
+			else{
+				dest.at<double>(i,j) = l.at<double>(i,j);
+			}						 
+		}
+	}
+	l.release();
+    return ;
+}
+
+void DesvioPadrao(cv::Mat & src, double & dest){
+
+	double a = 0.0, b = 0.0;
+	int n = src.rows * src.cols;
+	for(int i = 0; i <= src.rows; ++i) {
+			for(int j = 0; j <= src.cols; ++j) {
+				a += src.at<double>(i,j);
+				b += pow(src.at<double>(i,j),2);
+		}
+	}
+	
+	dest = sqrt( (b - (pow(a,2)/n)) / (n-1) );
+
+	return;
+}	
+
+void BAVE(cv::Mat & A,cv::Mat & B,cv::Mat & C,double & dest1,double & dest2, int orient){
+
+    double Oa, Ob, Oc;
+    double q, qt, Wa, Wb, w;
+
+    cv::Mat A1(6,4,CV_64FC1);
+    cv::Mat B1(6,4,CV_64FC1);
+    cv::Mat C1(6,4,CV_64FC1);
+
+    if(orient == 0){
+	    Sobel(A, A1, A1.depth(), 1, 0, 3, 1, 0);
+	    Sobel(B, B1, B1.depth(), 1, 0, 3, 1, 0);
+	    Sobel(C, C1, C1.depth(), 1, 0, 3, 1, 0);
+	}
+	else{
+		Sobel(A, A1, A1.depth(), 0, 1, 3, 1, 0);
+		Sobel(B, B1, B1.depth(), 0, 1, 3, 1, 0);
+		Sobel(C, C1, C1.depth(), 0, 1, 3, 1, 0);
+	}
+	///Calculando o desvio padrao
+	DesvioPadrao(A1, Oa);
+	DesvioPadrao(B1, Ob);
+	DesvioPadrao(C1, Oc);
+
+	///Fazendo os calculos pedidos no artigo
+	if( (Oa < Ob) && Oa < 5)
+		Wa = (-0.06 * Oa) + 0.8;
+	else if( Ob < Oa && Ob < 5)
+		Wa = (0.06 * Oa) + 0.8;
+	else
+		Wa = 0.5;	
+	Wb = 1 - Wa;
+   
+	q = ((Wa * Oa) + (Wb * Ob) + 0.6) / (Oc + 0.1);
+
+	qt = 1 - exp((-16.5) * q);
+
+	if (qt <= 0.88)
+		w = 1;
+	else
+		w = exp((log(0.001) / 0.22) * (qt - 0.88));
+	dest1 = (w * qt);
+	dest2 = w;
+
+	return;
+}
+
+
+/// Não é desejado utilizar essa funcao in-place - adequar um const no src
 void analysisContrast(const cv::Mat & src,cv::Mat & dest)
 {
     cv::Scalar mean;
@@ -333,56 +425,5 @@ void analysisContrast(const cv::Mat & src,cv::Mat & dest)
 
     return ;
 }
-
-void localContrastRMS( const cv::Mat &src,cv::Mat &dest, const int stdev)
-{
-    double std_deviation, mean;
-    cv::Mat mean_local(src.rows,src.cols,CV_32FC1);
-    cv::Mat mean_sq(src.rows,src.cols,CV_32FC1);
-    cv::Mat source(src.rows,src.cols,CV_32FC1);
-    src.assignTo(source,source.type());//Para casos em que o tipo de 'src' nao eh float
-
-    mean_sq = source.mul(source);//Gera uma matriz com os valores de src ao quadrado
-
-    cv::GaussianBlur(source,mean_local,cv::Size(stdev,stdev),0,0);
-    cv::GaussianBlur(mean_sq,mean_sq,cv::Size(stdev,stdev),0,0);
-
-    for(int i = 0;i < src.rows; i++){
-        for(int j = 0; j < src.cols; j++){
-            mean = mean_local.at<float>(i,j);
-
-            std_deviation = sqrt(mean_sq.at<float>(i,j) - (mean * mean));
-            dest.at<float>(i,j) = std_deviation / mean;
-        }
-    }
-
-    return ;
-}
-
-void filterRank(const cv::Mat &src,cv::Mat & dest)
-{
-    int i,j;
-
-    assert((dest.rows == (src.rows - 1)) && (dest.cols == (src.cols - 1)));
-
-    /// Buffer para guardar o filtro vertical
-    cv::Mat temp(src.rows - 1, src.cols, src.type());
-
-    /// Operador de diferença na direção vertical
-    for(i = 0; i < src.rows - 1; ++i){
-        for(j = 0; j < src.cols; ++j){
-            temp.at<uchar>(i,j) = src.at<uchar>(i+1,j) - src.at<uchar>(i,j);
-        }
-    }
-    /// Operador de diferença na direção horizontal
-    for(i = 0; i < src.rows - 1; ++i){
-        for(j = 0; j < src.cols - 1; ++j){
-            dest.at<uchar>(i,j) = temp.at<uchar>(i,j+1) - temp.at<uchar>(i,j);
-        }
-    }
-
-    return ;
-}
-
 
 

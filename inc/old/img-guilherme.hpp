@@ -38,16 +38,7 @@ enum ConvolutionType {
   CONVOLUTION_VALID /** Return only the submatrix containing elements that were not influenced by the border */
 };
 
-/**
- * Retorna o pico na superficie de correlacao entre duas matrizes
- */
 double maxCorr2D(const cv::Mat & src1,const cv::Mat & src2);
-
-/**
- * Coloca em \param{dest} o resultado da convolucao de \param{img}
- * com \param{kernel}.
- * Equivalente ao uso da funcao conv2 do MATLAB.
- */
 void conv2D(const cv::Mat &img, cv::Mat& dest, const cv::Mat& kernel, ConvolutionType ctype = CONVOLUTION_SAME, int btype = cv::BORDER_DEFAULT);
 
 void downsample(const cv::Mat & src,
@@ -70,7 +61,7 @@ void windowHamming(const cv::Mat & src, cv::Mat &dest);
 * @param dest  Matriz de destino
 * @param r     Amortecimento do filtro
 */
-void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r=48.0);
+void filterLawsH(const cv::Mat &src,cv::Mat & dest,double r=48.0);
 
 /**
 * @brief Retorna em dest a convolucao com o filtro de textura de Laws no sentido vertical
@@ -78,25 +69,19 @@ void filterLawsH(const cv::Mat &src,cv::Mat & dest,float r=48.0);
 * @param src   Matriz de origem
 * @param dest  Matriz de destino
 * @param r     Amortecimento do filtro
-*
 */
-void filterLawsV(const cv::Mat &src,cv::Mat & dest,float r=48.0);
+void filterLawsV(const cv::Mat &src,cv::Mat & dest,double r=48.0);
 
-void filterHantaoH(const cv::Mat &src,cv::Mat & dest,float r=1.0);
-void filterHantaoV(const cv::Mat &src,cv::Mat & dest,float r=1.0);
-void analysisTexture(const cv::Mat & src,cv::Mat & dest);
+void filterHantaoH(const cv::Mat &src,cv::Mat & dest, double r=26.0);
+void filterHantaoV(const cv::Mat &src,cv::Mat & dest, double r=26.0);
+
+void analysisTexture(const cv::Mat & src,cv::Mat & dest, int flag);
+void analysisLuminance(const cv::Mat & src,cv::Mat & dest, int flag);
+
+void BSNBS(const cv::Mat & src,cv::Mat & VC,cv::Mat & dest1,cv::Mat & dest2, int orient);
+void BAVE(cv::Mat & A,cv::Mat & B,cv::Mat & C,double & dest1,double & dest2, int orient);
+void DesvioPadrao(cv::Mat & src, double & dest);
 void analysisContrast(const cv::Mat &src,cv::Mat & dest);
-
-/// (Ref.:Contrast sensitivity in natural scenes depends on edge as well as spatial frequency structure,p.7-9.)
-void localContrastRMS(const cv::Mat & src,cv::Mat & dest, const int stdev);
-
-/**
- * Filtra a imagem em src para estimar melhor o ruído na imagem, colocando
- * a imagem filtrada em dest.
- * Ref.:\sa{Estimation of image noise variance}
- */
-void filterRank(const cv::Mat &src,cv::Mat & dest);
-
 
 
 #endif // IMG_HPP

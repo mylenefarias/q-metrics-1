@@ -29,6 +29,7 @@
 #include <iostream>
 #include <string>
 
+using namespace std;
 void writeFrame(cv::Mat & src, string fName);
 
 #endif // DEBUG_H

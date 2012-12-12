@@ -1,7 +1,4 @@
 #include "loader.h"
-//using namespace std; // prefer using std::string;
-using namespace std;
-#include <string>
 
 Loader::Loader(string fN, int sX, int sY, int yuv)
     :fName(fN),sizeX(sX),sizeY(sY),format(yuv)
@@ -17,7 +14,7 @@ Loader::Loader(string fN, int sX, int sY, int yuv)
         printf("Formato de YUV invalido \n");
         exit(1);
     }
- 
+
     file    = fopen(fName.c_str(),"rb");
     if((length = getFileSize(file)) == -1){
         std::cout << "Erro ao ler tamanho do arquivo" << std::endl;
@@ -30,7 +27,7 @@ Loader::Loader(string fN, int sX, int sY, int yuv)
     std::cout << "Numero total de frames: " << total_frame_nr << std::endl;
 
     /// @todo Arrumar um jeito melhor de carregar o arquivo yuv
-    uchar * ybuf = new uchar[total_frame_nr*sizeX*sizeY]; // so Y (onde estao os U e V??)
+    uchar * ybuf = new uchar[total_frame_nr*sizeX*sizeY];
 
     for(int frame_nr=0; frame_nr< total_frame_nr; ++frame_nr){
         fseek(file,yuvbuffersize*frame_nr,SEEK_SET);
@@ -40,6 +37,7 @@ Loader::Loader(string fN, int sX, int sY, int yuv)
         frameY.push_back(cv::Mat(cv::Size(sizeX,sizeY), CV_8UC1, (ybuf+(sizeX*sizeY*frame_nr))));
     }
 
+    //delete ybuf;
     fclose(file);
 
     degrade_iteration = 0;
@@ -70,97 +68,25 @@ long Loader::getFileSize(FILE * hFile)
 
 void    Loader::showFrame(int i)
 {
-  // show only Y frame (color??)
     cv::Mat  frame = frameY.at(i);
     cv::imshow("FRAME",frame);
 }
 
-void Loader::degradeFrame(int i, std::string deg)
+void Loader::degradeFrame(int i)
 {
     cv::Mat frame = frameY.at(i);
-    if   (deg == "block") {
-	  blockingFrame(frame);
-    }
-    else if   (deg == "blur") {
-	  blurringFrame(frame);
-    }
-    else if   (deg == "ring") {
-      ringingFrame(frame,-10.0f,RINGING_375ns);
-    }
-    else if   (deg == "noise") {
-	  noiseWhiteFrame(frame,0,110);
-    }
-    else if   (deg == "blockandblur") {
-		cv::Mat frame_block = frame.clone();
-		cv::Mat frame_blur = frame.clone();
-		blockingFrame(frame_block);
-		blurringFrame(frame_blur);
-		cv::addWeighted(frame_block, 0.5, frame_blur, 0.5, 0, frame);
-    }
+//    blockingFrame(frame);
+//    blurringFrame(frame);
+//    ringingFrame(frame,-10.0f,RINGING_375ns);
+    noiseWhiteFrame(frame,5,10);
+
+    FILE * f_teste;
+    f_teste = fopen("teste.txt","a");
+    fprintf(f_teste,"%d : %f  \n", degrade_iteration, noise1Farias(frame));
+    fclose(f_teste);
+
     degrade_iteration += 1;
-}
 
-/// @todo melhorar a forma de gerar as componentes U e V do arquivo degradado
-/// quando melhorar a forma de carregar as componentes U e V no construtor.
-/// Do jeito atual carrega o arquivo de video duas vezes.
-void Loader::degradeVideo(string degradedName, std::string deg)
-{
-    // files of degraded and original videos
-    FILE * f_degraded;
-    FILE * f_original = 0;
-    // open file for degraded video
-    f_degraded = fopen(degradedName.c_str(),"w");
-
-    // initial configuration is for 400 (only luma)
-    int yuvbuffersize = sizeX*sizeY;
-    int uvbuffersize = 0;
-    // read format of the video
-    uchar * uvbuffer;
-    uchar *  ybuffer;
-    std::cout << "Formato: " << format << std::endl;
-    
-    // Set correct frame size for the color format
-    if(format != 400){
-        f_original = fopen(fName.c_str(),"rb");
-        if     (format == 420){
-            yuvbuffersize = 3*sizeX*sizeY/2;
-            uvbuffersize  = sizeX*sizeY/2;
-        }else if(format == 422){
-            yuvbuffersize = 2*sizeX*sizeY;
-            uvbuffersize  = sizeX*sizeY;
-        }else if(format == 444){
-            yuvbuffersize = 3*sizeX*sizeY;
-            uvbuffersize = 2*sizeX*sizeY;
-        }
-    }
-    // buffers to store the UV (chroma) and Y (luma) information
-    uvbuffer = new uchar[uvbuffersize];
-    ybuffer = new uchar[sizeX*sizeY];
-    
-    for(int frame_nr=0; frame_nr< total_frame_nr; ++frame_nr){
-        degradeFrame(frame_nr, deg);
-        
-        if(format != 400)
-        {
-            fseek(f_original,yuvbuffersize*(frame_nr),SEEK_SET);
-	    // Read Y
-	    if(fread((uchar*)(ybuffer),sizeX*sizeY,1,f_original) == 0){
-                printf("Problema ao ler o arquivo .yuv \n");
-            }
-            //fwrite(ybuffer,sizeX*sizeY,1,f_degraded);
-	    fwrite(frameY.at(frame_nr).data,sizeX*sizeY,1,f_degraded);
-
-	    if(fread((uchar*)(uvbuffer),uvbuffersize,1,f_original) == 0){
-                printf("Problema ao ler o arquivo .yuv \n");
-            }
-            fwrite(uvbuffer,uvbuffersize,1,f_degraded);
-        }
-    }
-
-    delete uvbuffer;
-    delete ybuffer;
-    if(format != 400) fclose(f_original);
-    fclose(f_degraded);
 }
 
 void Loader::dumpFrame(int i)
@@ -242,7 +168,6 @@ void    Loader::writeCodebook(string fCodebook,float DMOS,int frames_in_word,int
 
 double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_sizeX,int word_sizeY){
 
-	std::string rfscanf = 0;
     FILE * codebook;
     codebook = fopen(fCodebook.c_str(),"r");
 
@@ -270,13 +195,13 @@ double   Loader::predictMOS(string fCodebook,int K,int frames_in_word,int word_s
     /// Faz a leitura do arquivo codebook para o algoritmo de K-Nearest Neighbors
     for(int i = 0,f = 0; i < number_training_vectors; ++i,f+=number_features){
 
-        rfscanf = fscanf(codebook,
-				  "%f;%f;%f;%f;%f\n",
-				  &output_vectors[i],
-				  &feature_vectors[f],    /// blocking
-				  &feature_vectors[f+1],  /// blurring
-				  &feature_vectors[f+2],  /// contrast
-				  &feature_vectors[f+3]); /// texture
+        fscanf(codebook,
+               "%f;%f;%f;%f;%f\n",
+               &output_vectors[i],
+               &feature_vectors[f],    /// blocking
+               &feature_vectors[f+1],  /// blurring
+               &feature_vectors[f+2],  /// contrast
+               &feature_vectors[f+3]); /// texture
     }
 
     cv::Mat trainData(number_training_vectors,number_features,CV_32FC1,feature_vectors);
@@ -410,8 +335,7 @@ void   Loader::callMetrics() {
     double avg_blur[4] = {0,0,0,0},min_blur[4] = {1000,1000,1000,1000},max_blur[4] = {-1,-1,-1,-1};
     double avg_block[2] = {0,0},min_block[2] = {1000,1000},max_block[2] = {-1,-1};
     double avg_packet[3] = {0,0,0},min_packet[3] = {1000,1000,1000},max_packet[3] = {-1,-1,-1};
-    //FILE  *f_output; 
-    FILE  *f_avg,*f_param;
+    FILE  *f_output, *f_avg,*f_param;
     string name = fName.substr(0,fName.size() - 4);
 
     name += ".txt";
@@ -588,10 +512,8 @@ double   Loader::pool_frame(vector<double> v)
 
 int  Loader::count_lines(FILE * codebook)
 {
-    int enter = fscanf(codebook,"%*[^\n]");
-    int carac = fscanf(codebook,"%*c");
     int lines = 0;
-    while (EOF != enter && EOF != carac)
+    while (EOF != (fscanf(codebook,"%*[^\n]"), fscanf(codebook,"%*c")))
         ++lines;
     rewind(codebook);
     return lines;

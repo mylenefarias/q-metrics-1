@@ -50,10 +50,6 @@ double  blockingVlachos(const cv::Mat &src);
 /// Implementacao em MATLAB:
 /// https://ece.uwaterloo.ca/~z70wang/research/nr_jpeg_quality/jpeg_quality_score.m
 double  blockingWang(const cv::Mat & src);
-/// (ref.: A Simplified Human Vision Model)
-double  blockingLiuHeynderickx(const cv::Mat & src);
-/// (ref.: A NO-REFERENCE BLOCKING ARTIFACTS VISIBILITY ESTIMATOR IN IMAGES )
-double  blockingYammineWigeKaup(const cv::Mat & src);
 
 /// (ref.: Perceptual blur and ringing metrics: Application to JPEG2000)
 double  blurringWinkler(const cv::Mat &src,
