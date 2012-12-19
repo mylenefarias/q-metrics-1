@@ -1,3 +1,4 @@
+
 #include "loader.h"
 #include "limits.h"
 
@@ -15,9 +16,9 @@ int main(int argc, char *argv[])
     int  sx     = atoi(argv[3]);  /// Numero de colunas
     int  sy     = atoi(argv[4]);  /// Numero de linhas
     int  yuv    = atoi(argv[5]);  /// Tipo do arquivo .yuv - Ver definicoes em global.h
-    string deg = "block"; 
-    Loader loadedFile(fN,sx,sy,yuv);
-
+    Loader loadedFile(fN,sx,sy,yuv); /// load original
+    string deg = "block";  	     /// type of degradation
+    
     if(mode == "train"){
 
         float DMOS  = atof(argv[6]); /// DMOS do arquivo .yuv
@@ -72,28 +73,33 @@ int main(int argc, char *argv[])
             if(((char)c==106))                                     /// Tecla 'j'
                 loadedFile.degradeFrame(frame_atual, deg);
         }
-    }else if(mode == "degrade"){
-        int videonumber = atoi(argv[6]); // 1o argumento -- numero de videos
-		std::string output1(argv[7]);    // 2o argumento -- nome do video de saida
-		string deg(argv[8]);             // 3o argumento -- tipo de degradacao
-
-		std::string output;
-        int number = 1;
-		char numstr[21];
-
-        for (number = 1;number <= videonumber; ++number){
-			sprintf(numstr, "%d.yuv", number);
-			output = output1 + numstr;
-			loadedFile.degradeVideo(output, deg);
-			if(number!=videonumber)
-				Loader loadedFile(output,sx,sy,yuv);
-		}
-    }else{
+    }else if(mode == "degrade")
+    {
+        std::string output1(argv[6]);    /// 1o argumento -- nome do video de saida
+	std::string output;              /// string de auxilio para escrita do nome do video de saida
+	///printf(argv[6]);
+	
+	string deg(argv[7]);             /// 2o argumento -- tipo de degradacao
+	int videonumber = atoi(argv[8]); /// number of this video
+        printf("Generating the %d-th video with degradation %s and scaling factors",videonumber,argv[7]);
+        double scale[3];          /// valores das escalas = 3 para blockyblurry --> atualizar depois!!!
+        for (int i = 1; i<=3;i++)
+	{  
+	    scale[i] =  atof(argv[8+i]); /// read all the scaling factors
+	    printf("%f  ",  scale[i]);   /// printing on the screen
+	}
+	printf("\n");
+        char numstr[21]; 
+	sprintf(numstr, "%d.yuv", videonumber); /// builds the name of the output video using the number variable
+	output = output1 + numstr;
+	loadedFile.degradecombineVideo(output, deg, scale); /// calls the algorithm from the loader.cpp that degrades the original
+    }
+    else
+    {
         printf("Invalid Option \n");
         PrintHelp();
         exit(0);
     }
-
     return 0;
 }
 
@@ -106,6 +112,7 @@ void PrintHelp()
            "\t video: show the video \n"
            "\t metrics: call the metrics \n"
            "\t degrade: generate n videos with defects \n"
+	   // consertar este help -- esta horrivel!!!
            "file: path to the .yuv file \n"
            "width: width of the video \n"
            "height: height of the video \n"

@@ -40,10 +40,13 @@ class Loader
                 void    callMetrics();
                 void    callMetrics2(float DMOS);
                 void    degradeVideo(std::string degradedName, std::string deg);
+		void    degradecombineVideo(std::string degradedName, std::string deg, double *scale);
 
                 void    showFrame(int i);
                 void    dumpFrame(int i);
-                void    degradeFrame(int i, std::string deg);
+                void    degradecombineFrame(int i, std::string deg, double *scale);
+		void    degradeFrame(int i, std::string deg);
+                
                 void    callDebug(int i);
 
         private:

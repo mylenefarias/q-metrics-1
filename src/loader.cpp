@@ -75,9 +75,31 @@ void    Loader::showFrame(int i)
     cv::imshow("FRAME",frame);
 }
 
+void Loader::degradecombineFrame(int i, std::string deg, double scale[3])
+{
+    /// Read original frame in a format that is easy for OpenCV
+    cv::Mat frame = frameY.at(i);
+    /// This function creates degraded frames from 
+    /// the original frame and combines 
+    /// them with different weights
+    
+    if   (deg == "blockandblur") {
+		cv::Mat frame_block = frame.clone(); /// cria uma frame para blocking              
+		cv::Mat frame_blur = frame.clone();  /// cria uma frame para blurring
+		blockingFrame(frame_block);  /// add blockiness to the blocking frame
+		blurringFrame(frame_blur);   /// add blurriness to the blurriness frame
+		cv::addWeighted(frame_block, scale[1], frame_blur, scale[2], scale[3], frame); /// combines them
+    }
+    degrade_iteration += 1;
+}
+
 void Loader::degradeFrame(int i, std::string deg)
 {
+    /// Read original frame in a format that is easy for OpenCV
     cv::Mat frame = frameY.at(i);
+    /// This function creates degraded frames from 
+    /// the original frame 
+    
     if   (deg == "block") {
 	  blockingFrame(frame);
     }
@@ -85,21 +107,13 @@ void Loader::degradeFrame(int i, std::string deg)
 	  blurringFrame(frame);
     }
     else if   (deg == "ring") {
-      ringingFrame(frame,-10.0f,RINGING_375ns);
+	  ringingFrame(frame,-10.0f,RINGING_375ns);
     }
     else if   (deg == "noise") {
 	  noiseWhiteFrame(frame,0,110);
     }
-    else if   (deg == "blockandblur") {
-		cv::Mat frame_block = frame.clone();
-		cv::Mat frame_blur = frame.clone();
-		blockingFrame(frame_block);
-		blurringFrame(frame_blur);
-		cv::addWeighted(frame_block, 0.5, frame_blur, 0.5, 0, frame);
-    }
     degrade_iteration += 1;
 }
-
 /// @todo melhorar a forma de gerar as componentes U e V do arquivo degradado
 /// quando melhorar a forma de carregar as componentes U e V no construtor.
 /// Do jeito atual carrega o arquivo de video duas vezes.
@@ -107,9 +121,9 @@ void Loader::degradeVideo(string degradedName, std::string deg)
 {
     // files of degraded and original videos
     FILE * f_degraded;
-    FILE * f_original = 0;
+    FILE * f_original;
     // open file for degraded video
-    f_degraded = fopen(degradedName.c_str(),"w");
+    f_degraded = fopen(degradedName.c_str(),"w"); /// open file where degraded video will be stored
 
     // initial configuration is for 400 (only luma)
     int yuvbuffersize = sizeX*sizeY;
@@ -122,7 +136,7 @@ void Loader::degradeVideo(string degradedName, std::string deg)
     // Set correct frame size for the color format
     if(format != 400){
         f_original = fopen(fName.c_str(),"rb");
-        if     (format == 420){
+        if  (format == 420){
             yuvbuffersize = 3*sizeX*sizeY/2;
             uvbuffersize  = sizeX*sizeY/2;
         }else if(format == 422){
@@ -143,7 +157,7 @@ void Loader::degradeVideo(string degradedName, std::string deg)
         if(format != 400)
         {
             fseek(f_original,yuvbuffersize*(frame_nr),SEEK_SET);
-	    // Read Y
+	    /// Read Y
 	    if(fread((uchar*)(ybuffer),sizeX*sizeY,1,f_original) == 0){
                 printf("Problema ao ler o arquivo .yuv \n");
             }
@@ -159,10 +173,72 @@ void Loader::degradeVideo(string degradedName, std::string deg)
 
     delete uvbuffer;
     delete ybuffer;
-    if(format != 400) fclose(f_original);
+    ///if(format != 400) /// why??
+      ///fclose(f_original);
     fclose(f_degraded);
 }
+/// Esta função é indêntica a anterior exceto pela chamada a combine ---
+/// mas, a  ideia é mudar isto!
+void Loader::degradecombineVideo(string degradedName, std::string deg, double scale[3])
+{
+    // files of degraded and original videos
+    FILE * f_degraded;
+    FILE * f_original;
+    // open file for degraded video
+    f_degraded = fopen(degradedName.c_str(),"w"); /// open file where degraded video will be stored
 
+    // initial configuration is for 400 (only luma)
+    int yuvbuffersize = sizeX*sizeY;
+    int uvbuffersize = 0;
+    // read format of the video
+    uchar * uvbuffer;
+    uchar *  ybuffer;
+    std::cout << "Formato: " << format << std::endl;
+    
+    // Set correct frame size for the color format
+    if(format != 400){
+        f_original = fopen(fName.c_str(),"rb");
+        if  (format == 420){
+            yuvbuffersize = 3*sizeX*sizeY/2;
+            uvbuffersize  = sizeX*sizeY/2;
+        }else if(format == 422){
+            yuvbuffersize = 2*sizeX*sizeY;
+            uvbuffersize  = sizeX*sizeY;
+        }else if(format == 444){
+            yuvbuffersize = 3*sizeX*sizeY;
+            uvbuffersize = 2*sizeX*sizeY;
+        }
+    }
+    // buffers to store the UV (chroma) and Y (luma) information
+    uvbuffer = new uchar[uvbuffersize];
+    ybuffer = new uchar[sizeX*sizeY];
+    
+    for(int frame_nr=0; frame_nr< total_frame_nr; ++frame_nr){
+        degradecombineFrame(frame_nr, deg, scale);
+        
+        if(format != 400)
+        {
+            fseek(f_original,yuvbuffersize*(frame_nr),SEEK_SET);
+	    /// Read Y
+	    if(fread((uchar*)(ybuffer),sizeX*sizeY,1,f_original) == 0){
+                printf("Problema ao ler o arquivo .yuv \n");
+            }
+            //fwrite(ybuffer,sizeX*sizeY,1,f_degraded);
+	    fwrite(frameY.at(frame_nr).data,sizeX*sizeY,1,f_degraded);
+
+	    if(fread((uchar*)(uvbuffer),uvbuffersize,1,f_original) == 0){
+                printf("Problema ao ler o arquivo .yuv \n");
+            }
+            fwrite(uvbuffer,uvbuffersize,1,f_degraded);
+        }
+    }
+
+    delete uvbuffer;
+    delete ybuffer;
+    ///if(format != 400) /// why??
+      ///fclose(f_original);
+    fclose(f_degraded);
+}
 void Loader::dumpFrame(int i)
 {
     cv::Mat frame = frameY.at(i);
