@@ -2,7 +2,7 @@
 
 double   blockingWang(const cv::Mat & src)
 {
-    double block_metric = 0;
+        double block_metric = 0;
 
     int subcols = (int) (src.cols/8);
     int subrows = (int) (src.rows/8);
@@ -28,8 +28,8 @@ double   blockingWang(const cv::Mat & src)
     /// Diferenca do sinal na vertical
     cv::Mat d_v1 = src(cv::Rect(0,1,src.cols,src.rows-1)).clone();
     cv::Mat d_v2 = src(cv::Rect(0,0,src.cols,src.rows-1)).clone();
-    d_v1.convertTo(d_h1,CV_32SC1);
-    d_v2.convertTo(d_h2,CV_32SC1);
+    d_v1.convertTo(d_v1,CV_32SC1);
+    d_v2.convertTo(d_v2,CV_32SC1);
     cv::Mat d_v = d_v1 - d_v2;
 
     /// Blocagem estimada verticalmente
@@ -363,18 +363,22 @@ double  blurringWinkler(const cv::Mat & src,BlurWinklerOptions options,double th
                     if((src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) > 0){
                         k   = j;
                         max = src.at<uchar>(i,k);
-                        while((max <= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                        while(max <= src.at<uchar>(i,k+1)){
                             k++;
                             max = src.at<uchar>(i,k);
                             c_end  = k;
+							if (k == src.cols -1)
+								break;
                         }
                     }else /* (src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) <= 0 */ {
                         k   = j;
                         min = src.at<uchar>(i,k);
-                        while((min >= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                        while(min >= src.at<uchar>(i,k+1)){
                             k++;
                             min = src.at<uchar>(i,k);
                             c_end  = k;
+							if (k == src.cols -1)
+								break;
                         }
                     }
                 }
@@ -473,18 +477,22 @@ double  blurringWinklerV2(const cv::Mat & src,BlurWinklerOptions options,double 
                     if((src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) > 0){
                         k   = j;
                         max = src.at<uchar>(i,k);
-                        while((max <= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                        while(max <= src.at<uchar>(i,k+1)){
                             k++;
                             max = src.at<uchar>(i,k);
                             c_end  = k;
+							if (k == src.cols -1)
+								break;
                         }
                     }else /* (src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) <= 0 */ {
                         k   = j;
                         min = src.at<uchar>(i,k);
-                        while((min >= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                        while(min >= src.at<uchar>(i,k+1)){
                             k++;
                             min = src.at<uchar>(i,k);
                             c_end  = k;
+							if (k == src.cols -1)
+								break;
                         }
                     }
                 }
@@ -576,18 +584,22 @@ double  blurringCPBD(const cv::Mat &src,BlurWinklerOptions options,double thresh
                     if((src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) > 0){
                         k   = j;
                         Max = src.at<uchar>(i,k);
-                        while((Max <= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                        while(Max <= src.at<uchar>(i,k+1)){
                             k++;
                             Max = src.at<uchar>(i,k);
                             c_end  = k;
+							if (k == src.cols -1)
+								break;
                         }
                     }else /* (src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) <= 0 */ {
                         k   = j;
                         min = src.at<uchar>(i,k);
-                        while((min >= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                        while(min >= src.at<uchar>(i,k+1)){
                             k++;
                             min = src.at<uchar>(i,k);
                             c_end  = k;
+							if (k == src.cols -1)
+								break;
                         }
                     }
                 }
@@ -604,26 +616,28 @@ double  blurringCPBD(const cv::Mat &src,BlurWinklerOptions options,double thresh
     if(edge_counter == 0) return 0.0;
 
 	double P, CPBD = 0;
-	int Beta = 0.5;//least squares fitting
-	cv::Mat contrast(src.rows,src.cols,CV_8UC1);
+	//valor 0.5 está sendo convertido para 0 , isto é intencional?
+	float Beta = 0.5;//least squares fitting
+	cv::Mat contrast(src.rows,src.cols,CV_32FC1);
 	
-	localContrastRMS(src,contrast,3);//todo: testar outros valores
+	localContrastRMS(src,contrast,3);//todo: testar outros valores 
 	for(int i = 0; i < src.rows; ++i){/*Atribui o valor 5 ou 3 dependendo do contraste*/
         	for(int j = 0; j < src.cols; ++j){
-			if(contrast.at<uchar>(i,j) <= 50)
-				contrast.at<uchar>(i,j) = 5;
+			if(contrast.at<float>(i,j) <= 50)
+				contrast.at<float>(i,j) = 5;
 			else
-				contrast.at<uchar>(i,j) = 3;
+				contrast.at<float>(i,j) = 3;
 		}
 	}
 	
+	contrast.convertTo(contrast,CV_8UC1);
 	for(int i = 0; i < src.rows; ++i){/*Calcula a probabilidade acumulada*/
         	for(int j = 0; j < src.cols; ++j){
 			if(edges.at<uchar>(i,j) > 0){
 				if(edges.at<uchar>(i,j)/contrast.at<uchar>(i,j) > 0)
-					P = 1 - exp( -(edges.at<uchar>(i,j)/contrast.at<uchar>(i,j)) ^Beta );
+					P = 1 - exp( pow(-(edges.at<uchar>(i,j)/contrast.at<uchar>(i,j)) ,Beta) );
 				else
-					P = 1 - exp( (edges.at<uchar>(i,j)/contrast.at<uchar>(i,j)) ^Beta );
+					P = 1 - exp( pow((edges.at<uchar>(i,j)/contrast.at<uchar>(i,j)) ,Beta) );
 				if(P <= (1-exp(-1)) ) //63%
 					CPBD += P/edge_counter; //Normalizado
 			
@@ -1093,20 +1107,24 @@ double ringing2Farias(const cv::Mat & src,BlurWinklerOptions options,double thre
                     if((src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) > 0){
                         k   = j;
                         max = src.at<uchar>(i,k);
-                        while((max <= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                        while(max <= src.at<uchar>(i,k+1)){
                             k++;
                             max = src.at<uchar>(i,k);
                             c_start  = k;
+							if (k == src.cols -1)
+								break;
                         }
                         previous_extreme_val = max;
                         state = FIND_MIN;
                     }else /* (src.at<uchar>(i,j+1) - src.at<uchar>(i,j)) <= 0 */ {
                         k   = j;
                         min = src.at<uchar>(i,k);
-                        while((min >= src.at<uchar>(i,k+1))&&(k<src.cols)){
+                        while(min >= src.at<uchar>(i,k+1)){
                             k++;
                             min = src.at<uchar>(i,k);
                             c_start  = k;
+							if (k == src.cols -1)
+								break;
                         }
                         previous_extreme_val = min;
                         state = FIND_MAX;
@@ -1122,13 +1140,16 @@ double ringing2Farias(const cv::Mat & src,BlurWinklerOptions options,double thre
                         k = previous_extreme_pos; /// Considera-se que o ponto extremo nunca sera marcado pelo detector de bordas
                         if(state == FIND_MAX){
                             max = src.at<uchar>(i,k);
-                            while((max <= src.at<uchar>(i,k+1))&&(k<src.cols)){
-                                k++;
-                                if(edges.at<uchar>(i,k) > 0){
-                                    found_edge = true;
-                                    break;
-                                }
-                                max = src.at<uchar>(i,k);
+                            if (k <= src.cols -2)
+								while(max <= src.at<uchar>(i,k+1)){
+								    k++;
+	                                if(edges.at<uchar>(i,k) > 0){
+		                                found_edge = true;
+			                            break;
+				                    }
+					                max = src.at<uchar>(i,k);
+									if (k == src.cols -1)
+										break;
                             }
                             if(!found_edge){
                                 cur_oscillation = abs(max - previous_extreme_val);
@@ -1139,14 +1160,17 @@ double ringing2Farias(const cv::Mat & src,BlurWinklerOptions options,double thre
                             }
                         }else /* state == FIND_MIN */ {
                             min = src.at<uchar>(i,k);
-                            while((min >= src.at<uchar>(i,k+1))&&(k<src.cols)){
-                                k++;
-                                if(edges.at<uchar>(i,k) > 0){
-                                    found_edge = true;
-                                    break;
-                                }
-                                min = src.at<uchar>(i,k);
-                            }
+                            if (k <= src.cols -2)
+								while(min >= src.at<uchar>(i,k+1)){
+									k++;
+									if(edges.at<uchar>(i,k) > 0){
+										found_edge = true;
+										break;
+									}
+									min = src.at<uchar>(i,k);
+									if (k == src.cols -1)
+										break;
+	                            }
                             if(!found_edge){
                                 cur_oscillation = abs(min - previous_extreme_val);
                                 if(cur_oscillation > max_oscillation) max_oscillation = cur_oscillation;
@@ -1178,8 +1202,8 @@ double noise1Farias(const cv::Mat &src)
     double noise_index = 0.0;
 
     /// Filtro para separar o conteúdo da imagem da estimação do ruído
-    cv::Mat filtered(src.rows - 1, src.cols - 1, src.type());
-    filterRank(src,filtered);
+    cv::Mat filtered(src.rows - 1, src.cols - 1, src.type()); 
+    filterRank(src,filtered); //aparentemente não funciona com YUV422
 
     std::vector<double> blocks_variance;
     std::vector<double> subblocks_variance;
@@ -1190,7 +1214,6 @@ double noise1Farias(const cv::Mat &src)
         for(int n = 0; n < ((int) (filtered.cols/8)); ++n){
             /// Bloco de 8x8
             cv::Mat block = (filtered)(cv::Rect(8*n,8*m,8,8));
-
             /// Divide o bloco em 9 sub-blocos de 4x4
             subblocks_variance.clear();
             for(int i = 0; i < 3; ++i){
@@ -1264,7 +1287,7 @@ double noise2Farias(const cv::Mat &src,double algorithm_resolution)
     double s_old = 0.0;
     double s_new = 0.0;
     int count = 0;
-    double threshold = INFINITY;
+    double threshold = FLT_MAX;
     /// Cálculo iterativo do valor quadrático médio do histograma
     do
     {
@@ -1473,4 +1496,6 @@ double SSIM(const cv::Mat& src1,
     return index_scalar.val[0];
 
 }
+
+
 
