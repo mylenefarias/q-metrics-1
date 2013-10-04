@@ -629,15 +629,14 @@ double  blurringCPBD(const cv::Mat &src,BlurWinklerOptions options,double thresh
 				contrast.at<float>(i,j) = 3;
 		}
 	}
-	
 	contrast.convertTo(contrast,CV_8UC1);
 	for(int i = 0; i < src.rows; ++i){/*Calcula a probabilidade acumulada*/
         	for(int j = 0; j < src.cols; ++j){
 			if(edges.at<uchar>(i,j) > 0){
-				if(edges.at<uchar>(i,j)/contrast.at<uchar>(i,j) > 0)
-					P = 1 - exp( pow(-(edges.at<uchar>(i,j)/contrast.at<uchar>(i,j)) ,Beta) );
+				if(edges.at<uchar>(i,j)/(double)contrast.at<uchar>(i,j) > 0)
+					P = 1 - exp( -pow((edges.at<uchar>(i,j)/(double)contrast.at<uchar>(i,j)) ,Beta) );
 				else
-					P = 1 - exp( pow((edges.at<uchar>(i,j)/contrast.at<uchar>(i,j)) ,Beta) );
+					P = 1 - exp( pow((edges.at<uchar>(i,j)/(double)contrast.at<uchar>(i,j)) ,Beta) ); 
 				if(P <= (1-exp(-1)) ) //63%
 					CPBD += P/edge_counter; //Normalizado
 			
