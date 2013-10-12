@@ -1094,7 +1094,8 @@ double ringing2Farias(const cv::Mat & src,BlurWinklerOptions options,double thre
                     } while((cur_oscillation >= oscillation_threshold) && (found_edge == false));
 
                     c_start = previous_extreme_pos;
-                    ring_index +=  max_oscillation * abs(c_start - c_end);
+                    if ((c_start - c_end) !=0)
+                    ring_index +=  max_oscillation/abs(c_start - c_end);
                 }
 
 
@@ -1181,7 +1182,8 @@ double ringing2Farias(const cv::Mat & src,BlurWinklerOptions options,double thre
                     } while((cur_oscillation >= oscillation_threshold) && (found_edge == false));
 
                     c_end = previous_extreme_pos;
-                    ring_index +=  max_oscillation * abs(c_start - c_end);
+                    if ((c_start - c_end) !=0)
+                    ring_index +=  max_oscillation/abs(c_start - c_end);
                 }
             } /* if(edges.at<uchar>(i,j) > 0) */
         } /* for em j */
