@@ -1058,7 +1058,9 @@ double ringing2Farias(const cv::Mat & src,BlurWinklerOptions options,double thre
                         k = previous_extreme_pos; /// Considera-se que o ponto extremo nunca sera marcado pelo detector de bordas
                         if(state == FIND_MAX){
                             max = src.at<uchar>(i,k);
-                            while((max <= src.at<uchar>(i,k-1))&&(k>1)){
+                            while(k>1){
+                                if(max >= src.at<uchar>(i,k-1))
+                                  break;
                                 k--;
                                 if(edges.at<uchar>(i,k) > 0){
                                     found_edge = true;
@@ -1075,7 +1077,9 @@ double ringing2Farias(const cv::Mat & src,BlurWinklerOptions options,double thre
                             }
                         }else /* state == FIND_MIN */ {
                             min = src.at<uchar>(i,k);
-                            while((min >= src.at<uchar>(i,k-1))&&(k>1)){
+                            while(k>1){
+                                if (min <= src.at<uchar>(i,k-1))
+                                    break;
                                 k--;
                                 if(edges.at<uchar>(i,k) > 0){
                                     found_edge = true;
