@@ -827,23 +827,23 @@ double packetLossImpairments(const cv::Mat &src,cv::Mat &frameEDGES,double thres
              *b += (H_intra + V_intra)/macro_blocks;
              //inter_avg = (H_inter + V_inter);
            }
-             for( int q = 0; q<= 15; q++){//Media do contraste e da textura para cada macrobloco
-                 for( int w = 0; w<=15; w++){
-                     if(I1.at<float>(i+q,j+w) < 0) I1.at<float>(i+q,j+w) = -I1.at<float>(i+q,j+w); 
-                     if(I2.at<float>(i+q,j+w) < 0) I2.at<float>(i+q,j+w) = -I2.at<float>(i+q,j+w);
-
-                     if(I1.at<float>(i+q,j+w) + I2.at<float>(i+q,j+w) >= threshold3){
-                         I1.at<float>(i+q,j+w) = I1.at<float>(i+q,j+w) + I2.at<float>(i+q,j+w);//Filtra o contraste apenas dos pixels usados
-                     }
-                     else {
-                         I1.at<uchar>(i+q,j+w) = 0;
-                     }
-//frameEDGES.at<uchar>(i+q,j+w) = 255;
-                     spatial_activity += I1.at<float>(i+q,j+w) / 256;
-                     LCrms += C0.at<float>(i+q,j+w) / 256;
-
-                }
-             }
+		for( int q = 0; q<= 15; q++){//Media do contraste e da textura para cada macrobloco
+			for( int w = 0; w<=15; w++){
+				if(I1.at<uchar>(i+q,j+w) < 0) I1.at<uchar>(i+q,j+w) = -I1.at<uchar>(i+q,j+w); 
+				if(I2.at<uchar>(i+q,j+w) < 0) I2.at<uchar>(i+q,j+w) = -I2.at<uchar>(i+q,j+w);
+	
+				if(I1.at<uchar>(i+q,j+w) + I2.at<uchar>(i+q,j+w) >= threshold3){
+					I1.at<uchar>(i+q,j+w) = I1.at<uchar>(i+q,j+w) + I2.at<uchar>(i+q,j+w);//Filtra o contraste apenas dos pixels usados
+				}
+				else {
+					I1.at<uchar>(i+q,j+w) = 0;
+				}
+				//frameEDGES.at<uchar>(i+q,j+w) = 255;
+				spatial_activity += I1.at<uchar>(i+q,j+w) / 256;
+				LCrms += C0.at<float>(i+q,j+w) / 256;
+	
+			}
+		}
                 //Armazena a inter diferenca ponderada pelo contraste e textura
                 //printf("LCrms %f\tSpatial %f\n",LCrms,spatial_activity);
                 //weighted_inter_avg += inter_avg / ((1 + alpha*spatial_activity)*(1 + beta*LCrms ) );
